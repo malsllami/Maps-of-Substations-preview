@@ -1,0 +1,193 @@
+<!doctype html>
+<!-- index.html — الصفحة الرئيسية: تجمع المكوّنات فقط (الربط في pages/home.js، لا منطق أعمال هنا)
+     إعادة التصميم (19 أكتوبر): ثلاث شاشات داخل الصفحة يتنقل بينها الشريط السفلي بلا إعادة تحميل —
+     «الرئيسية» (البحث والإجراءات والإحصاءات)، «الخريطة» (شريط البحث الصغير والبطاقة والخريطة)، «المحطات».
+     الكرة أُزيلت من هنا (تنتقل لصفحة الدخول).
+     The home page: assembles components only. Redesign (19 Oct): three in-page screens switched by the bottom bar with
+     no reload — home, map, stations. The globe moved out of here (to the login page). -->
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>محطات التوزيع | الشركة السعودية للطاقة</title>
+<script src="config/الإعدادات.js"></script>
+<script src="preview-guard.js"></script>
+<script src="services/fresh-start.js"></script>
+<script src="services/theme.js"></script>
+<!-- تطبيق قابل للتثبيت: الملف والأيقونة ولون الشريط، وتسجيل عامل الخدمة بعد التحميل — installable app: manifest, icon, bar colour, SW registered after load -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0D1826">
+<!-- هذه الصفحة وحدها تمتد خلف شريط الساعة في التطبيق المثبّت: الخريطة والملاحة تظهران خلفه، وبقية شاشاتها تُنزل رأسها بالمنطقة
+     الآمنة، والصفحة بطول الشاشة الكاملة 100lvh حتى لا يظهر فراغ سفلي (home.css). الصفحات الأخرى بلا امتداد.
+     This page alone extends behind the status bar in the installed app: the map and navigation show behind it, its other
+     screens push their header down by the safe area, and the page is the full 100lvh so no bottom gap shows. Other pages don't extend. -->
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<script src="services/pwa.js"></script>
+<script src="services/load-guard.js"></script>
+<link rel="stylesheet" href="styles/update-sheet.css">
+<script src="components/update-sheet.js"></script>
+<link rel="stylesheet" href="styles/install-sheet.css">
+<script src="components/install-sheet.js"></script>
+<link rel="stylesheet" href="styles/feature-tour.css">
+<script src="config/جولة_تعريفية.js"></script>
+<script src="components/feature-tour.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/app-header.css">
+<link rel="stylesheet" href="styles/connection-status.css">
+<link rel="stylesheet" href="styles/globe.css">
+<link rel="stylesheet" href="styles/station-search.css">
+<link rel="stylesheet" href="styles/station-card.css">
+<link rel="stylesheet" href="styles/map.css">
+<link rel="stylesheet" href="styles/map-view.css">
+<link rel="stylesheet" href="styles/map-tools.css">
+<link rel="stylesheet" href="styles/navigation.css">
+<link rel="stylesheet" href="styles/offline-map.css">
+<link rel="stylesheet" href="styles/add-edit-station.css">
+<link rel="stylesheet" href="styles/delete-station.css">
+<link rel="stylesheet" href="styles/recent-stations.css">
+<link rel="stylesheet" href="styles/tables.css">
+<link rel="stylesheet" href="styles/stats-cards.css">
+<link rel="stylesheet" href="styles/storage-section.css">
+<link rel="stylesheet" href="styles/profile-gate.css">
+<link rel="stylesheet" href="styles/home.css">
+<link rel="stylesheet" href="styles/bottom-nav.css">
+<link rel="stylesheet" href="styles/station-details.css">
+<link rel="stylesheet" href="styles/stations-list.css">
+<link rel="stylesheet" href="styles/more-menu.css">
+<link rel="stylesheet" href="styles/contact-admin.css">
+</head>
+<body class="home-page" data-view="map">
+
+<header id="appHeader"></header>
+
+<!-- صفحة الزائر كما في الموقع الحي (طلب محمد 19 أكتوبر): الكرة وفوقها العنوان وتحتها «تسجيل الدخول» — تظهر للزائر وحده
+     The guest page as on the live site: the globe, the heading above, «login» below — guests only -->
+<section class="guest-landing" id="guestLanding" hidden>
+  <div class="globe-stage" id="globeStage"></div>
+  <div class="guest-hero">
+    <div class="eyebrow">SEC // DISTRIBUTION NETWORK</div>
+    <h1 class="guest-title">ابحث عن محطات التوزيع والتحويل</h1>
+    <a href="auth.html" class="guest-login-cta globe-bottom-anchor">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      تسجيل الدخول
+    </a>
+  </div>
+</section>
+
+<main class="app-views">
+<!-- شاشة «الرئيسية» — the home screen -->
+<section class="app-view view-home" id="viewHome">
+  <!-- البحث أولًا: عنوان واضح وحقل ظاهر دائمًا (ملاحظة محمد: لا لبس في زر دائري) — search first: a clear title and an always-visible field -->
+  <div class="hero-content" id="heroContent">
+    <div class="home-date" id="homeDate"></div>
+    <h1 class="home-title">ابحث عن محطات التوزيع والتحويل</h1>
+    <div class="search-wrap">
+      <div id="lensBox"></div>
+    </div>
+  </div>
+
+  <section class="cards-section" id="cardsSection">
+    <!-- أرقام المحطات (توزيع، تحويل، الإجمالي، عمليات اليوم) — the station numbers -->
+    <div class="home-slot" id="statsSlot"></div>
+    <!-- إجراءات سريعة: الأعطال، آخر المحطات، تحديث الأرقام («إضافة محطة» صار زر ＋ في الشريط السفلي)
+         Quick actions: outage, recent, refresh numbers («add station» is now the ＋ in the bottom bar) -->
+    <div class="action-tiles">
+      <button type="button" class="action-tile tile-outage" id="outageTileBtn" aria-controls="homeOutage">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span class="tile-label">الأعطال</span><span class="tile-sub">عدة محطات</span>
+      </button>
+      <button type="button" class="action-tile tile-recent" id="recentToggleBtn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span class="tile-label">آخر المحطات</span><span class="tile-sub">آخر ساعتين</span>
+      </button>
+      <button type="button" class="action-tile tile-refresh" id="refreshStatsBtn" aria-label="تحديث أرقام لوحة المعلومات" aria-describedby="refreshNote" title="يحدّث أرقام لوحة المعلومات فقط — لبيانات المحطات استخدم زر التحديث في الشريط العلوي">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        <span class="tile-label">تحديث</span><span class="tile-sub">الأرقام</span>
+      </button>
+    </div>
+    <!-- رسالة زر «تحديث»: ماذا يحدّث، ونتيجته (طلب محمد، 15 أكتوبر) — the refresh tile's note -->
+    <div class="action-note" id="refreshNote" role="status" hidden></div>
+    <div class="home-slot" id="homeOutage"></div>
+    <div class="home-slot" id="recentSlot"></div>
+  </section>
+</section>
+
+<!-- الرئيسية = الخريطة بكامل الصفحة (20 أكتوبر): البحث عائم أعلاها، وبطاقة المحطة أسفلها، وشاشة «تحديد موقعك» عند الدخول
+     Home = the full-page map: the floating search above, the station card below, and the «locate yourself» screen on entry -->
+<section class="hero app-view view-map" id="heroSection">
+  <div class="top-content-area" id="topContentArea">
+    <div id="barBox"></div>
+    <!-- حالة نسخة المحطات في الرئيسية (بلا شريط علوي): تظهر بنقطة البحث أو وحدها حين لا تكون خضراء — the copy status on home -->
+    <div class="map-status" id="mapStatus" role="status" hidden><span data-role="map-status-text"></span><button type="button" class="map-status-btn" data-act="map-refresh" aria-label="تحديث نسخة المحطات">⟳ تحديث</button></div>
+  </div>
+  <div class="map-stage-slot"><div id="mapStage"></div></div>
+  <div class="station-table station-sheet" id="stationTable"></div>
+</section>
+
+<!-- شاشة «تفاصيل المحطة» (تُفتح من لوحة المحطة) — the station details screen (opened from the station sheet) -->
+<section class="app-view view-details" id="viewDetails"><div id="detailsBox"></div></section>
+
+<!-- شاشة «المزيد» (المرحلة ز) وشاشة «البيانات المؤقتة» المستقلة منها — the «More» screen and its own cached-data screen -->
+<section class="app-view view-more" id="viewMore"><div id="moreBox"></div></section>
+<section class="app-view view-storage" id="viewStorage">
+  <div class="storage-screen">
+    <div class="ss-head"><button type="button" class="ss-back" id="storageBack" aria-label="رجوع"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button><span class="ss-title">البيانات المؤقتة</span></div>
+    <div class="sync-line" id="storageSyncLine" role="status"></div>
+    <div class="home-slot" id="storageSlot"></div>
+  </div>
+</section>
+
+<!-- شاشة «المحطات» — the stations screen -->
+<section class="app-view view-stations" id="viewStations"><div id="stationsBox"></div></section>
+</main>
+
+<nav id="bottomNav"></nav>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="utils/dates.js"></script>
+<script src="utils/html.js"></script>
+<script src="utils/text-input.js"></script>
+<script src="utils/station-query.js"></script>
+<script src="services/timing.js"></script>
+<script src="services/connection.js"></script>
+<script src="services/session.js"></script>
+<script src="services/api-client.js"></script>
+<script src="services/settings-lists.js"></script>
+<script src="services/stations-db.js"></script>
+<script src="services/stations-sync.js"></script>
+<script src="services/station-search.js"></script>
+<script src="services/osrm.js"></script>
+<script src="services/direction-tracker.js"></script>
+<script src="services/navigation.js"></script>
+<script src="services/nav-camera.js"></script>
+<script src="services/offline-map.js"></script>
+<script src="components/connection-status.js"></script>
+<script src="components/contact-admin.js"></script>
+<script src="components/app-header.js"></script>
+<script src="components/globe.js"></script>
+<script src="components/offline-map-ui.js"></script>
+<script src="components/map-view.js"></script>
+<script src="components/district-labels.js"></script>
+<script src="components/station-card.js"></script>
+<script src="components/nearby-layer.js"></script>
+<script src="components/outage-search.js"></script>
+<script src="components/map-tools.js"></script>
+<script src="components/navigation-view.js"></script>
+<script src="components/station-search-box.js"></script>
+<script src="components/add-edit-station.js"></script>
+<script src="components/delete-station.js"></script>
+<script src="components/recent-stations.js"></script>
+<script src="components/stats-cards.js"></script>
+<script src="components/storage-section.js"></script>
+<script src="components/profile-gate.js"></script>
+<script src="components/bottom-nav.js"></script>
+<script src="components/station-details.js"></script>
+<script src="components/stations-list.js"></script>
+<script src="services/my-location.js"></script>
+<script src="components/more-menu.js"></script>
+<script src="pages/home.js"></script>
+</body>
+</html>
