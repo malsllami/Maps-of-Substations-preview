@@ -118,7 +118,7 @@
     const o = opts || {};
     const map = view.map, L = global.L;
     let markers = [], line = null, busy = false;
-    view.tools.insertAdjacentHTML('beforeend', '<div class="tb-div" data-outage-div></div><button type="button" class="toolbar-btn" data-outage="toggle" title="محطات العطل (أكثر من محطة)"><span class="tb-icon">⚠️</span><span class="tb-label">أعطال</span></button>');
+    view.tools.insertAdjacentHTML('beforeend', '<div class="tb-div" data-outage-div></div><button type="button" class="toolbar-btn" data-outage="toggle" title="محطات العطل (أكثر من محطة)"><span class="tb-icon">🚧</span><span class="tb-label">أعطال</span></button>');
     view.panels.insertAdjacentHTML('beforeend', '<div class="outage-panel" data-role="outage-panel">' + panelHtml_('محطات العطل — أدخل الأرقام بالترتيب') + '</div>');
     const panel = view.panels.querySelector('[data-role="outage-panel"]'), btn = view.tools.querySelector('[data-outage="toggle"]');
     const input = panel.querySelector('[data-role="input"]'), err = panel.querySelector('[data-role="error"]');
@@ -160,6 +160,7 @@
       if (ids.length < 2) { err.textContent = MSG.MAP_MIN; return null; }
       if (ids.length > MAX) { err.textContent = MSG.MAX; return null; }
       if (o.isBlocked && o.isBlocked()) return null;
+      if (global.SecUsageLog) global.SecUsageLog.count('outage'); // سجل الاستخدام (22 أكتوبر) / the usage log
       busy = true;
       clear();
       if (o.onStart) { try { o.onStart(); } catch (e) { /* لا شيء / nothing */ } }
@@ -211,6 +212,7 @@
       if (ids.length > MAX) { err.textContent = MSG.MAX; return null; }
       const loggedIn = o.isLoggedIn ? o.isLoggedIn() : !!(global.SecSession && global.SecSession.isLoggedIn());
       if (!loggedIn) { err.textContent = MSG.LOGIN; return null; }
+      if (global.SecUsageLog) global.SecUsageLog.count('outage'); // سجل الاستخدام (22 أكتوبر) / the usage log
       busy = true;
       err.textContent = MSG.HOME_SEARCHING;
       try {

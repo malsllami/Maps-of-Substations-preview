@@ -4,7 +4,7 @@
 (function (global) {
   'use strict';
   const API = global.SEC2_CONFIG.API_BASE_URL;
-  const BLOCKED = ["addNewStation","updateCoordinates","deleteStation","updateMemberProfile","registerUser","registerCredential","generateRegisterChallenge","clearSearchCache","logClientError"];
+  const BLOCKED = ["addNewStation","updateCoordinates","deleteStation","updateMemberProfile","registerUser","registerCredential","generateRegisterChallenge","clearSearchCache","logClientError","logUsage"];
   const MSG = 'المعاينة للقراءة فقط — لا إضافة ولا تعديل ولا حذف من نسخة المعاينة';
   const realFetch = global.fetch.bind(global);
   global.__previewBlocked = [];
@@ -56,33 +56,8 @@
       const d = global.document.createElement('div'); d.id = 'previewDiag';
       d.setAttribute('style', 'position:fixed;top:calc(env(safe-area-inset-top,0px) + 30px);left:50%;transform:translateX(-50%);z-index:2001;background:#111A;' +
         'color:#fff;font:700 13px/1.7 sans-serif;padding:10px 14px;border-radius:12px;direction:rtl;background:rgba(10,16,26,.92);');
-      d.innerHTML = rows.map(function (r) { return '<div>' + r[0] + ': <b dir="ltr">' + r[1] + '</b></div>'; }).join('') +
-        // تجارب الطبقة الضبابية أعلى الشاشة (22 أكتوبر) — the top haze experiments
-        '<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">' + EXPS.map(function (x) {
-          const on = exps_().indexOf(x[0]) !== -1;
-          return '<button type="button" data-exp="' + x[0] + '" style="font:700 13px sans-serif;padding:8px 10px;border-radius:10px;border:none;' +
-            'background:' + (on ? '#1FAE8C' : '#3A4757') + ';color:#fff">' + (on ? '✓ ' : '') + x[1] + '</button>';
-        }).join('') + '</div>';
-      d.addEventListener('click', function (e) {
-        const t = e.target.closest('[data-exp]'); if (!t) return;
-        const list = exps_(), k = t.dataset.exp, i = list.indexOf(k);
-        if (i === -1) list.push(k); else list.splice(i, 1);
-        try { global.localStorage.setItem(EXP_KEY, list.join(',')); } catch (err) { /* لا شيء / nothing */ }
-        global.location.reload();
-      });
+      d.innerHTML = rows.map(function (r) { return '<div>' + r[0] + ': <b dir="ltr">' + r[1] + '</b></div>'; }).join('');
       global.document.body.appendChild(d);
     });
-    applyExps_();
   });
-  // ===== تجارب الطبقة الضبابية (المعاينة وحدها، تُحفظ في جهاز المعاينة) — the haze experiments (preview only, saved on the device) =====
-  const EXP_KEY = 'sec2p-exp';
-  const EXPS = [['noscroll', 'تجربة 1: بلا تمرير في الخريطة'], ['topcolor', 'تجربة 2: شريط الساعة بلون الخلفية']];
-  function exps_() { try { return String(global.localStorage.getItem(EXP_KEY) || '').split(',').filter(Boolean); } catch (e) { return []; } }
-  function applyExps_() {
-    const on = exps_(), css = [];
-    if (on.indexOf('noscroll') !== -1) css.push('html:has(body.home-page[data-view="map"]),body.home-page[data-view="map"]{overflow:hidden;}');
-    if (on.indexOf('topcolor') !== -1) css.push('body.home-page::before{content:"";position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:1000;pointer-events:none;}');
-    if (!css.length) return;
-    const st = global.document.createElement('style'); st.textContent = css.join(' '); global.document.head.appendChild(st);
-  }
 })(window);
