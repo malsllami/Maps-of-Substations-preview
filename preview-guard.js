@@ -27,6 +27,16 @@
     b.setAttribute('style', 'position:fixed;top:calc(env(safe-area-inset-top,0px) + 4px);left:50%;transform:translateX(-50%);z-index:2000;' +
       'padding:3px 12px;border-radius:12px;background:#E5484D;color:#fff;font:700 12px/1.4 sans-serif;cursor:pointer;opacity:.92;');
     global.document.body.appendChild(b);
+    // (31 أكتوبر) ختم عامل الخدمة النشط فعلًا يُسأل منه هو، بجانب ختم ملفات الصفحة — the really active worker's stamp, asked from it, beside the page's
+    const short = function (s) { return String(s).split('-')[1] || String(s); };
+    const showStamps = function (active) { b.textContent = 'معاينة · نشط: ' + active + ' · صفحة: ' + short("20261031-023648-439097200"); };
+    const worker = global.navigator.serviceWorker && global.navigator.serviceWorker.controller;
+    if (!worker) showStamps('لا عامل');
+    else {
+      const ch = new MessageChannel(), timer = global.setTimeout(function () { showStamps('بلا ختم'); }, 2000);
+      ch.port1.onmessage = function (ev) { global.clearTimeout(timer); showStamps(short(ev.data)); };
+      worker.postMessage({ type: 'GET_SW_BUILD' }, [ch.port2]);
+    }
     // لوحة قياسات للمعاينة فقط (الضغط على الشارة): الشاشة، الصفحة، الفراغ، المنطقتان الآمنتان — preview-only measurements panel
     b.addEventListener('click', function () {
       const old = global.document.getElementById('previewDiag');
