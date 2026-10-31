@@ -8,6 +8,9 @@
   const MSG = 'المعاينة للقراءة فقط — لا إضافة ولا تعديل ولا حذف من نسخة المعاينة';
   const realFetch = global.fetch.bind(global);
   global.__previewBlocked = [];
+  global.__previewErrors = [];
+  global.addEventListener('error', function (e) { if (e && e.message) global.__previewErrors.push(e.message + ' @' + String(e.filename || '').split('/').pop() + ':' + e.lineno); });
+  global.addEventListener('unhandledrejection', function (e) { global.__previewErrors.push('وعد: ' + String(e && e.reason && e.reason.message || e && e.reason)); });
   global.fetch = function (input, init) {
     const url = typeof input === 'string' ? input : (input && input.url) || '';
     if (url.indexOf(API) === 0 && init && typeof init.body === 'string') {
@@ -29,7 +32,7 @@
     global.document.body.appendChild(b);
     // (31 أكتوبر) ختم عامل الخدمة النشط فعلًا يُسأل منه هو، بجانب ختم ملفات الصفحة — the really active worker's stamp, asked from it, beside the page's
     const short = function (s) { return String(s).split('-')[1] || String(s); };
-    const showStamps = function (active) { b.textContent = 'معاينة · نشط: ' + active + ' · صفحة: ' + short("20261031-043411-347991200"); };
+    const showStamps = function (active) { b.textContent = 'معاينة · نشط: ' + active + ' · صفحة: ' + short("20261031-044118"); };
     const worker = global.navigator.serviceWorker && global.navigator.serviceWorker.controller;
     if (!worker) showStamps('لا عامل');
     else {
@@ -49,6 +52,13 @@
         ['منطقة العناصر الثابتة', Math.round(fixedH)], ['الفراغ المعالَج', getComputedStyle(global.document.documentElement).getPropertyValue('--ios-gap').trim() || '0px'],
         ['الآمنة العلوية', cs.paddingTop], ['الآمنة السفلية', cs.paddingBottom]];
       probe.remove();
+      const K_ = global.SEC2_CONFIG.STORAGE_KEYS, ss_ = function (k) { try { return global.sessionStorage.getItem(k) || '—'; } catch (e) { return 'خطأ'; } }, upd_ = global.SecUpdateSheet && global.SecUpdateSheet.instance ? global.SecUpdateSheet.instance() : null;
+      rows.push(['الجهاز iPhone', String(/iPhone|iPad/.test(global.navigator.userAgent))], ['عضو مسجّل', String(!!global.localStorage.getItem(K_.SESSION))], ['إنترنت', String(global.navigator.onLine)],
+        ['ملف الشاشة محمّل', String(!!global.SecReinstallNotice)], ['الشاشة ظاهرة', String(!!global.document.querySelector('[data-role="reinstall-notice"]'))],
+        ['حالتها', global.localStorage.getItem(K_.REINSTALL_NOTICE) || '—'], ['فُتحت / أُغلقت', ss_(K_.REINSTALL_NOTICE + '-opened') + ' / ' + ss_(K_.REINSTALL_NOTICE + '-closed')],
+        ['بداية نظيفة', String(!!(global.SecFreshStart && global.SecFreshStart.quietUpdates()))], ['منشغل: عملية', String(!!(global.SecUpdateSheet && global.SecUpdateSheet.defaultBusy()))],
+        ['منشغل: لوحة تحديث', String(!!(upd_ && upd_.isShown()))], ['منشغل: جولة', String(!!(global.SecFeatureTour && global.SecFeatureTour.isOpen()))],
+        ['آخر خطأ', (global.__previewErrors.slice(-1)[0] || '—').slice(0, 90)]);
       // (21 أكتوبر) قياسات إضافية لتحديد موضع الصفحة على الشاشة — extra readings to locate the page on the screen
       const unitH = function (u) { const p = global.document.createElement('div'); p.setAttribute('style', 'position:absolute;top:0;width:1px;visibility:hidden;height:100' + u + ';'); global.document.body.appendChild(p); const h = Math.round(p.getBoundingClientRect().height); p.remove(); return h; };
       const vv = global.visualViewport, nav = global.document.querySelector('.bottom-nav'), nr = nav ? nav.getBoundingClientRect() : null;
