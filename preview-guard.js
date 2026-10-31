@@ -32,7 +32,7 @@
     global.document.body.appendChild(b);
     // (31 أكتوبر) ختم عامل الخدمة النشط فعلًا يُسأل منه هو، بجانب ختم ملفات الصفحة — the really active worker's stamp, asked from it, beside the page's
     const short = function (s) { return String(s).split('-')[1] || String(s); };
-    const showStamps = function (active) { b.textContent = 'معاينة · نشط: ' + active + ' · صفحة: ' + short("20261031-044118"); };
+    const showStamps = function (active) { b.textContent = 'معاينة · نشط: ' + active + ' · صفحة: ' + short("20261031-045338"); };
     const worker = global.navigator.serviceWorker && global.navigator.serviceWorker.controller;
     if (!worker) showStamps('لا عامل');
     else {
@@ -53,7 +53,7 @@
         ['الآمنة العلوية', cs.paddingTop], ['الآمنة السفلية', cs.paddingBottom]];
       probe.remove();
       const K_ = global.SEC2_CONFIG.STORAGE_KEYS, ss_ = function (k) { try { return global.sessionStorage.getItem(k) || '—'; } catch (e) { return 'خطأ'; } }, upd_ = global.SecUpdateSheet && global.SecUpdateSheet.instance ? global.SecUpdateSheet.instance() : null;
-      rows.push(['الجهاز iPhone', String(/iPhone|iPad/.test(global.navigator.userAgent))], ['عضو مسجّل', String(!!global.localStorage.getItem(K_.SESSION))], ['إنترنت', String(global.navigator.onLine)],
+      rows.push(['الجهاز: اللمس', String(global.navigator.maxTouchPoints)], ['الجهاز: التعريف', String(global.navigator.userAgent).slice(13, 45)], ['عضو مسجّل', String(!!global.localStorage.getItem(K_.SESSION))], ['إنترنت', String(global.navigator.onLine)],
         ['ملف الشاشة محمّل', String(!!global.SecReinstallNotice)], ['الشاشة ظاهرة', String(!!global.document.querySelector('[data-role="reinstall-notice"]'))],
         ['حالتها', global.localStorage.getItem(K_.REINSTALL_NOTICE) || '—'], ['فُتحت / أُغلقت', ss_(K_.REINSTALL_NOTICE + '-opened') + ' / ' + ss_(K_.REINSTALL_NOTICE + '-closed')],
         ['بداية نظيفة', String(!!(global.SecFreshStart && global.SecFreshStart.quietUpdates()))], ['منشغل: عملية', String(!!(global.SecUpdateSheet && global.SecUpdateSheet.defaultBusy()))],
