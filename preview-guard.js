@@ -29,7 +29,7 @@
     global.document.body.appendChild(b);
     // (31 أكتوبر) ختم عامل الخدمة النشط فعلًا يُسأل منه هو، بجانب ختم ملفات الصفحة — the really active worker's stamp, asked from it, beside the page's
     const short = function (s) { return String(s).split('-')[1] || String(s); };
-    const showStamps = function (active) { b.textContent = 'معاينة · نشط: ' + active + ' · صفحة: ' + short("20261031-023648-439097200"); };
+    const showStamps = function (active) { b.textContent = 'معاينة · نشط: ' + active + ' · صفحة: ' + short("20261031-033157-246860100"); };
     const worker = global.navigator.serviceWorker && global.navigator.serviceWorker.controller;
     if (!worker) showStamps('لا عامل');
     else {
