@@ -119,10 +119,13 @@
     else if (s.state === 'rejected') btns = '<button type="button" class="om-btn pri" data-act="download" style="grid-column:1/-1">إعادة التحميل</button>';
     else btns = '<button type="button" class="om-btn pri" data-act="download" style="grid-column:1/-1">تنزيل الخريطة</button>';
 
-    sheet.innerHTML = '<div class="om-grab"></div><h3 class="om-h">🗺 خريطة جدة بدون إنترنت</h3>' +
+    const html = '<div class="om-grab"></div><h3 class="om-h">🗺 خريطة جدة بدون إنترنت</h3>' +
       rows.map(function (r) { return '<div class="om-row"><span>' + r[0] + '</span><b>' + r[1] + '</b></div>'; }).join('') + prog + storage +
       '<p class="om-sub">تظهر تلقائيًا عند انقطاع الإنترنت · حدود محافظة جدة الرسمية · © OpenStreetMap</p>' +
       '<div class="om-btns">' + btns + '</div><div class="om-msg" hidden></div>' + await historyHtml_();
+    // (8 نوفمبر) أُغلقت اللوحة أثناء انتظار السجل ← لا كتابة (كان يُسقط خطأً متقطعًا) — closed while waiting ← no write (was an intermittent error)
+    if (!sheet) return;
+    sheet.innerHTML = html;
     sheet.querySelectorAll('[data-act]').forEach(function (b) { b.addEventListener('click', function () { act_(b.dataset.act); }); });
     const wifi = sheet.querySelector('.om-wifi input');
     if (wifi) wifi.addEventListener('change', function () { consent.wifiOnly = wifi.checked; });
@@ -237,9 +240,11 @@
   function loadLibs() {
     if (global.pmtiles && global.protomapsL) return Promise.resolve();
     if (!libsPromise) {
-      libsPromise = [CONFIG.LIBRARIES.PMTILES, CONFIG.LIBRARIES.PROTOMAPS_LEAFLET].reduce(function (p, src) {
+      // بصمة التحقق مع كل مكتبة (8 نوفمبر): fetch يرفض الملف إن لم يطابقها — each library with its integrity hash; fetch refuses a mismatch
+      libsPromise = [['PMTILES', CONFIG.LIBRARIES.PMTILES], ['PROTOMAPS_LEAFLET', CONFIG.LIBRARIES.PROTOMAPS_LEAFLET]].reduce(function (p, lib) {
+        const src = lib[1];
         return p.then(function () {
-          return global.fetch(src, { mode: 'cors' }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+          return global.fetch(src, { mode: 'cors', integrity: CONFIG.LIBRARIES_SRI[lib[0]] }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
             .then(function (code) {
               return new Promise(function (resolve, reject) {
                 const s = doc.createElement('script'), url = global.URL.createObjectURL(new global.Blob([code], { type: 'text/javascript' }));
