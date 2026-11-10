@@ -30,9 +30,14 @@
     b.setAttribute('style', 'position:fixed;top:calc(env(safe-area-inset-top,0px) + 4px);left:50%;transform:translateX(-50%);z-index:2000;' +
       'padding:3px 12px;border-radius:12px;background:#E5484D;color:#fff;font:700 12px/1.4 sans-serif;cursor:pointer;opacity:.92;');
     global.document.body.appendChild(b);
+    // (11 نوفمبر) في وضع البحث يصعد المربع وشرائح «محطة / DB / LBS» لأعلى الشاشة فتغطيها الشارة ← تختفي حتى يُغلق البحث
+    // in search mode the box and the kind chips rise to the top under the badge ← it hides until search closes
+    const hideCss = global.document.createElement('style');
+    hideCss.textContent = 'body.search-mode .preview-badge,body.search-mode #previewDiag{display:none !important;}';
+    global.document.head.appendChild(hideCss);
     // (31 أكتوبر) ختم عامل الخدمة النشط فعلًا يُسأل منه هو، بجانب ختم ملفات الصفحة — the really active worker's stamp, asked from it, beside the page's
     const short = function (s) { return String(s).split('-')[1] || String(s); };
-    const showStamps = function (active) { b.textContent = 'معاينة · نشط: ' + active + ' · صفحة: ' + short("20261111-005255"); };
+    const showStamps = function (active) { b.textContent = 'معاينة · نشط: ' + active + ' · صفحة: ' + short("20261111-024137"); };
     const worker = global.navigator.serviceWorker && global.navigator.serviceWorker.controller;
     if (!worker) showStamps('لا عامل');
     else {
