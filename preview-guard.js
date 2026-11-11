@@ -4,7 +4,8 @@
 (function (global) {
   'use strict';
   const API = global.SEC2_CONFIG.API_BASE_URL;
-  const BLOCKED = ["addNewStation","updateCoordinates","deleteStation","updateMemberProfile","registerUser","registerCredential","generateRegisterChallenge","clearSearchCache","logClientError","logUsage"];
+  const BLOCKED = ["updateMemberProfile","registerUser","registerCredential","generateRegisterChallenge","clearSearchCache","logClientError","logUsage"];
+  const RENAME_BLOCKED = true;
   const MSG = 'المعاينة للقراءة فقط — لا إضافة ولا تعديل ولا حذف من نسخة المعاينة';
   const realFetch = global.fetch.bind(global);
   global.__previewBlocked = [];
@@ -14,8 +15,14 @@
   global.fetch = function (input, init) {
     const url = typeof input === 'string' ? input : (input && input.url) || '';
     if (url.indexOf(API) === 0 && init && typeof init.body === 'string') {
-      let action = '';
-      try { action = JSON.parse(init.body).action || ''; } catch (e) { action = ''; }
+      let action = '', body = {};
+      try { body = JSON.parse(init.body) || {}; action = body.action || ''; } catch (e) { action = ''; }
+      // (11 نوفمبر) تغيير رقم السكينة يحتاج الخادم الجديد؛ ما دام الحي لم يُنشر يُمنع هنا حتى لا يظهر تغيير لم يُحفظ
+      // a switch id change needs the new server; until it is live it is refused here so no unsaved change shows
+      if (RENAME_BLOCKED && action === 'updateCoordinates' && body.newStationId) {
+        global.__previewBlocked.push('rename');
+        return Promise.resolve(new Response(JSON.stringify({ success: false, error: 'تغيير رقم السكينة يعمل بعد نشر الخادم في الحي — جرّب الآن تعديل الموقع والمنطقة والمغذي' }), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+      }
       if (BLOCKED.indexOf(action) !== -1) {
         global.__previewBlocked.push(action);
         const reply = action === 'logClientError' ? { success: true, logged: 0 } : { success: false, error: MSG };
@@ -26,7 +33,7 @@
   };
   global.document.addEventListener('DOMContentLoaded', function () {
     const b = global.document.createElement('div');
-    b.className = 'preview-badge'; b.textContent = 'معاينة — للقراءة فقط';
+    b.className = 'preview-badge'; b.textContent = 'معاينة — الحفظ حقيقي';
     b.setAttribute('style', 'position:fixed;top:calc(env(safe-area-inset-top,0px) + 4px);left:50%;transform:translateX(-50%);z-index:2000;' +
       'padding:3px 12px;border-radius:12px;background:#E5484D;color:#fff;font:700 12px/1.4 sans-serif;cursor:pointer;opacity:.92;');
     global.document.body.appendChild(b);
@@ -37,7 +44,7 @@
     global.document.head.appendChild(hideCss);
     // (31 أكتوبر) ختم عامل الخدمة النشط فعلًا يُسأل منه هو، بجانب ختم ملفات الصفحة — the really active worker's stamp, asked from it, beside the page's
     const short = function (s) { return String(s).split('-')[1] || String(s); };
-    const showStamps = function (active) { b.textContent = 'معاينة · نشط: ' + active + ' · صفحة: ' + short("20261111-171454"); };
+    const showStamps = function (active) { b.textContent = 'معاينة · نشط: ' + active + ' · صفحة: ' + short("20261111-173251"); };
     const worker = global.navigator.serviceWorker && global.navigator.serviceWorker.controller;
     if (!worker) showStamps('لا عامل');
     else {
