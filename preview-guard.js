@@ -5,7 +5,7 @@
   'use strict';
   const API = global.SEC2_CONFIG.API_BASE_URL;
   const BLOCKED = ["updateMemberProfile","registerUser","registerCredential","generateRegisterChallenge","clearSearchCache","logClientError","logUsage"];
-  const RENAME_BLOCKED = true;
+  const RENAME_BLOCKED = false;
   const MSG = 'المعاينة للقراءة فقط — لا إضافة ولا تعديل ولا حذف من نسخة المعاينة';
   const realFetch = global.fetch.bind(global);
   global.__previewBlocked = [];
@@ -44,7 +44,7 @@
     global.document.head.appendChild(hideCss);
     // (31 أكتوبر) ختم عامل الخدمة النشط فعلًا يُسأل منه هو، بجانب ختم ملفات الصفحة — the really active worker's stamp, asked from it, beside the page's
     const short = function (s) { return String(s).split('-')[1] || String(s); };
-    const showStamps = function (active) { b.textContent = 'معاينة · نشط: ' + active + ' · صفحة: ' + short("20261113-221807"); };
+    const showStamps = function (active) { b.textContent = 'معاينة · نشط: ' + active + ' · صفحة: ' + short("20261113-223016"); };
     const worker = global.navigator.serviceWorker && global.navigator.serviceWorker.controller;
     if (!worker) showStamps('لا عامل');
     else {
