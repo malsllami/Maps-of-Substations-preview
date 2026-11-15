@@ -71,6 +71,15 @@ body.admin-page header{position:sticky;top:0;z-index:20;}
 .ops-pill-edits{border-color:rgba(229,181,58,.75);}
 .ops-pill-edits .ops-pill-icon,.ops-pill-edits b{color:#E5B53A;}
 [data-theme="light"] .ops-pill-edits .ops-pill-icon,[data-theme="light"] .ops-pill-edits b{color:#A57C12;}
+/* (15 نوفمبر) صف السكاكين الكهربائية بعرض اللوحة تحت البطاقات الثلاث — the electrical switches row, full width under the three tiles */
+.ops-pill-sw{margin-top:10px;border-color:var(--c-sw-line);background:var(--c-sw-bg);gap:6px;}
+.ops-pill-sw .ops-sw-head{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;}
+.ops-pill-sw .ops-sw-head span{font-size:13.5px;font-weight:700;color:var(--c-sw-fg);}
+.ops-pill-sw .ops-sw-head b{display:inline;font-size:21px;color:var(--c-sw-fg);}
+.ops-pill-sw .ops-sw-split{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;}
+.ops-pill-sw .ops-sw-split span{font-size:12px;font-weight:700;color:var(--text-primary);}
+.ops-pill-sw .ops-sw-split b{display:inline;font-size:16px;color:var(--c-sw-fg);margin-inline-start:4px;}
+.ops-pill-sw .ops-sw-split i{width:1px;height:18px;background:var(--c-sw-line);}
 /* البطاقات الظاهرة — the visible cards */
 .ops-card{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px;min-width:0;}
 .ops-card-title{font-size:13.5px;font-weight:700;margin-bottom:10px;}
@@ -200,7 +209,12 @@ body.admin-page header{position:sticky;top:0;z-index:20;}
 .upd-card .ops-card-title small{font-weight:600;color:var(--text-secondary);}
 .upd-bar{position:relative;height:26px;margin:22px 0 12px;border-radius:13px;background:var(--bg-elev);border:1px solid var(--border-strong);overflow:visible;}
 .upd-fill{position:absolute;inset-block:0;inset-inline-start:0;border-radius:13px;background:var(--c-sw-fg);transition:width .4s;}
-.upd-card.is-done .upd-fill{background:var(--c-dist-fg);}
+/* (13 نوفمبر) لون الشريط بالنسبة — the bar color by share */
+.upd-low .upd-fill{background:#E5484D;}
+.upd-mid .upd-fill{background:var(--c-sw-fg);}
+.upd-high .upd-fill{background:#E8C547;}
+.upd-high .upd-pct{color:#1B1B1B;text-shadow:none;}
+.upd-full .upd-fill{background:var(--c-dist-fg);}
 .upd-target{position:absolute;top:-6px;bottom:-6px;width:2px;margin-inline-start:-1px;background:var(--text-primary);}
 .upd-target span{position:absolute;bottom:100%;transform:translateX(50%);font-size:11px;font-weight:700;color:var(--text-secondary);white-space:nowrap;}
 .upd-pct{position:absolute;inset-inline-start:10px;top:50%;transform:translateY(-50%);font-size:12px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.45);}

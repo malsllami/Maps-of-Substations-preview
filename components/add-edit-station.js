@@ -5,9 +5,9 @@
  * - الإضافة: النوع (توزيع/تحويل — المغذي والمنطقة للتوزيع فقط)، رقم المحطة، المغذي (اختياري)، المنطقة (إلزامية للتوزيع)،
  *   الإحداثيتان، «📍 استخدام موقعي الحالي»، لصق «عرض,طول» + «تطبيق»، معاينة بدبوس قابل للسحب وزر الأقمار، سبب الإضافة،
  *   «حفظ المحطة» بشريط تقدّم، ثم «✓ تمت إضافة المحطة بنجاح» + «حسنًا».
- * - (11 نوفمبر) نوع ثالث «سكينة هوائية»: زرّا الرمز (DB / LBS) والرقم أرقام فقط ← «DB-150»، ثم المغذي (اختياري) والمنطقة
+ * - (11 نوفمبر) نوع ثالث «سكينة هوائية»: زرّا الرمز (BS / LBS) والرقم أرقام فقط ← «BS-150»، ثم المغذي (اختياري) والمنطقة
  *   (إلزامية) والموقع؛ تُحفظ صفًا في جدول التوزيع (النوع «توزيع») فتُعدَّل وتُحذف وتُزامَن مثل المحطات.
- * - (11 نوفمبر، قرار محمد) تعديل السكينة كامل للجميع: الرمز (DB / LBS) والرقم والمنطقة والمغذي والموقع؛ تغيّر الرقم يُرسل
+ * - (11 نوفمبر، قرار محمد) تعديل السكينة كامل للجميع: الرمز (BS / LBS) والرقم والمنطقة والمغذي والموقع؛ تغيّر الرقم يُرسل
  *   newStationId ويبلغ الصفحة بالرقم القديم (onSaved(station, 'edit', { oldId })). المحطات لا يتغير رقمها.
  * - التعديل: المغذي والمنطقة (للتوزيع)، الإحداثيتان، الموقع الحالي، اللصق، المعاينة، السبب، «حفظ التعديل» و«إلغاء».
  * - الحقول تقبل الأرقام العربية والإنجليزية (text-input). لا كتابة والجهاز بلا إنترنت — النموذج يبقى بما فيه.
@@ -52,8 +52,32 @@
     // متى يراها الآخرون (اختيار محمد 16 أكتوبر: الثقة بالنسخة المحلية دقيقتان) — when others see it (local trust window: 2 minutes)
     SHARED_ADD: 'تظهر الإضافة عند جميع المستخدمين خلال دقيقتين كحد أقصى',
     SHARED_EDIT: 'يظهر التعديل عند جميع المستخدمين خلال دقيقتين كحد أقصى',
-    LEAVE: 'عملية الحفظ لسه ما خلصت'
+    LEAVE: 'عملية الحفظ لسه ما خلصت',
+    // (15 نوفمبر، قواعد محمد) شكل الرقم يحدد الجدول — بنفس نص رسائل الخادم / the id's shape decides the table — the server's wording
+    DIST_DIGITS_ONLY: 'رقم محطة التوزيع أرقام، ويُسمح بحرف واحد بعدها لخلية الربط (مثل 1111 A) — إن كان رمز محطة تحويل فاختر النوع «تحويل»',
+    SUB_NEEDS_LETTER: 'رمز محطة التحويل يبدأ بحروف — الرقم وحده محطة توزيع، فاختر النوع «توزيع»',
+    SUB_SHAPE: 'رمز محطة التحويل حروف، ويُسمح برقم تسلسل واحد بعدها (مثل IC 1)',
+    SUB_IS_SWITCH: 'هذا رقم سكينة هوائية — اختر النوع «سكينة هوائية»'
   };
+
+  /* (15 نوفمبر، قواعد محمد) نفس قواعد الخادم stationIdShapeError_ — the server's rules:
+   * التوزيع أرقام وحرف واحد بعدها لخلية الربط (1111 A، 9550-A)؛ التحويل حروف أولًا ورقم تسلسل واحد (IC 1، ICY-15)؛
+   * السكينة رمزها الثابت ثم أرقام. distribution = digits + one trailing letter; substation = letters first + one number. */
+  const DIST_ID_RE = /^\d+(-?[A-Z])?$/, SUB_ID_RE = /^\p{L}+(?: \p{L}+)*(?:[ -]?\d+)?$/u;
+  function code_(id) { return TI.normalizeCode(id || '').replace(/[۰-۹]/g, function (d) { return String(d.charCodeAt(0) - 1776); }).replace(/\s+/g, ' ').trim(); }
+  /* النوع من شكل الرقم: سكينة ← سكينة، يبدأ بحرف ← تحويل، غير ذلك ← توزيع — the type from the id's shape */
+  function typeFromId_(id) {
+    if (Q.switchParts(id)) return SWITCH;
+    return /^\p{L}/u.test(code_(id)) ? 'تحويل' : 'توزيع';
+  }
+  /* خطأ الشكل حسب النوع أو '' — the shape error for the type, or '' */
+  function shapeError_(type, id) {
+    const c = code_(id), compact = c.replace(/ /g, '');
+    if (type === 'توزيع') return Q.switchParts(id) || DIST_ID_RE.test(compact) ? '' : MSG.DIST_DIGITS_ONLY;
+    if (Q.switchParts(id)) return MSG.SUB_IS_SWITCH;
+    if (/^\d/.test(compact)) return MSG.SUB_NEEDS_LETTER;
+    return SUB_ID_RE.test(c) ? '' : MSG.SUB_SHAPE;
+  }
   const NOFILL = ' autocomplete="new-password" data-lpignore="true" data-form-type="other" autocorrect="off" autocapitalize="off" spellcheck="false"';
   const CLOSE_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
 
@@ -169,8 +193,9 @@
     const sw = type === SWITCH, id = form.f('id');
     form.r('sw').hidden = !sw;
     form.r('idlabel').textContent = sw ? 'رقم السكينة' : 'رقم المحطة';
-    id.placeholder = sw ? 'مثال: 150' : 'مثال: 39070';
-    id.inputMode = sw ? 'numeric' : 'text';
+    // (15 نوفمبر) التوزيع أرقام فقط ← لوحة الأرقام، والتحويل ← لوحة الحروف / distribution ← the number pad, substations ← letters
+    id.inputMode = type === 'تحويل' ? 'text' : 'numeric';
+    id.placeholder = sw ? 'مثال: 150' : type === 'تحويل' ? 'مثال: IC 1' : 'مثال: 39070';
     if (sw) id.value = id.value.replace(/[^0-9]/g, '');
     form.r('submit').textContent = sw ? 'حفظ السكينة' : 'حفظ المحطة';
     form.r('title').textContent = sw ? '+ إضافة سكينة هوائية' : '+ إضافة محطة جديدة';
@@ -269,12 +294,13 @@
     const reason = TI.stripInvisible(form.f('reason').value.trim());
     const at = readCoords_(form);
     if (form.mode === 'add') {
-      // السكينة: الرمز المختار + الأرقام فقط ← «DB-150»، وتُحفظ صفًا في جدول التوزيع — the switch: prefix + digits ← «DB-150», a distribution row
+      // السكينة: الرمز المختار + الأرقام فقط ← «BS-150»، وتُحفظ صفًا في جدول التوزيع — the switch: prefix + digits ← «BS-150», a distribution row
       const typed = TI.normalizeCode(form.f('id').value.trim());
       const num = sw ? typed.replace(/[^0-9]/g, '') : '';
       if (sw && !num) return MSG.SWITCH_ID_REQUIRED;
       const id = sw ? Q.switchId(form.prefix, num) : typed;
       if (!id) return MSG.ID_REQUIRED;
+      if (!sw) { const shape = shapeError_(form.type, id); if (shape) return shape; } // (15 نوفمبر) لا شيء في الجدول الآخر / nothing in the other table
       if (dist && !region) return MSG.REGION_REQUIRED;
       if (!at) return MSG.ADD_COORDS;
       const type = sw ? 'توزيع' : form.type;
@@ -289,7 +315,9 @@
       const num = TI.normalizeDigits(form.f('swnum').value).replace(/[^0-9]/g, '');
       if (!num) return MSG.SWITCH_ID_REQUIRED;
       const want = Q.switchId(form.prefix, num);
-      if (want !== Q.canonicalId(s.id)) newId = want;
+      // يُقارن بالرقم كما هو محفوظ: سكينة بالرمز القديم «BS-150» أو بصيغة أخرى «LBS77» تُوحَّد عند أي تعديل
+      // compared with the id as saved: a switch with the old «DB» prefix or another form is unified on any edit
+      if (want !== String(s.id).trim().toUpperCase()) newId = want;
       if (!region && !s.region) return MSG.REGION_REQUIRED;
     }
     if (!at) return MSG.BAD_COORDS;
@@ -379,12 +407,16 @@
   function openAdd(prefillId) {
     if (saving) return;
     close();
-    if (add.r('success').hidden === false) { clearFields_(add); setType_(add, 'توزيع'); resetPreview_(add, null); }
-    if (prefillId !== undefined && prefillId !== null) {
-      // «+ إضافة سكينة» من بحث «DB-150» ← النوع والرمز والرقم جاهزة — from a «DB-150» search ← type, prefix and number ready
+    if (add.r('success').hidden === false) { clearFields_(add); resetPreview_(add, null); }
+    // (15 نوفمبر، محطات حُفظت في الجدول الخطأ) لا يبقى نوع إضافة سابقة: النوع من الرقم المقترح، وبلا رقم «توزيع» دائمًا
+    // no type left from a previous add: the type comes from the suggested id, and without one it's always «توزيع»
+    const has = prefillId !== undefined && prefillId !== null && String(prefillId).trim() !== '';
+    setType_(add, has ? typeFromId_(prefillId) : 'توزيع');
+    if (has) {
+      // «+ إضافة سكينة» من بحث «BS-150» ← النوع والرمز والرقم جاهزة — from a «BS-150» search ← type, prefix and number ready
       const p = Q.switchParts(prefillId);
-      if (p) { setType_(add, SWITCH); setPrefix_(add, p.prefix); add.f('id').value = p.num; }
-      else { if (add.type === SWITCH) setType_(add, 'توزيع'); add.f('id').value = TI.normalizeCode(prefillId); }
+      if (p) { setPrefix_(add, p.prefix); add.f('id').value = p.num; }
+      else add.f('id').value = TI.normalizeCode(prefillId);
     }
     add.el.classList.add('show');
     ensureMap_(add);

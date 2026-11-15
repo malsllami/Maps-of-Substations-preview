@@ -69,6 +69,13 @@
 
   // ===== أدوات العرض — Display helpers =====
   function num_(v) { return typeof v === 'number' && isFinite(v) ? v : null; }
+  /* (15 نوفمبر، تصميم محمد 1) صف «السكاكين الكهربائية» تحت البطاقات الثلاث: الإجمالي ثم BS | LBS؛ يغيب إذا لم يرسله الخادم
+   * The «electrical switches» row under the three tiles: the total, then BS | LBS; hidden when the server doesn't send it */
+  function switchesRow_(d) {
+    if (num_(d.totalSwitches) === null) return '';
+    return '<div class="ops-pill ops-pill-sw" data-role="switches"><div class="ops-sw-head"><span class="ops-sw-mark">◆</span><span>السكاكين الكهربائية</span><b>' + show_(d.totalSwitches) + '</b></div>' +
+      '<div class="ops-sw-split"><span>عادية BS <b>' + show_(d.switchesBS) + '</b></span><i></i><span>سمارت LBS <b>' + show_(d.switchesLBS) + '</b></span></div></div>';
+  }
   /* (11 نوفمبر، تصميم محمد 1) تقدّم التحديث: شريط حتى النسبة مع علامة الهدف، وثلاث خانات (حدّث، الباقي للهدف، الإجبار)
    * The update progress (Mohammed's design 1): a bar to the share with the target mark, and three cells */
   function updateCard_(u) {
@@ -77,7 +84,9 @@
     const daysLeft = u.forceAt ? Math.max(0, Math.ceil((u.forceAt - Date.now()) / 86400000)) : null;
     const force = u.forced ? 'تم الإجبار' : daysLeft === null ? '—' : daysLeft === 0 ? 'اليوم' : 'بعد ' + daysLeft + (daysLeft === 1 ? ' يوم' : ' أيام');
     const m = /^(\d{4})(\d{2})(\d{2})/.exec(u.build), built = m ? m[1] + '-' + m[2] + '-' + m[3] : '';
-    return '<div class="ops-card upd-card' + (reached || u.forced ? ' is-done' : '') + '" data-role="update-progress"><div class="ops-card-title">🔄 تقدّم التحديث — ' +
+    // (13 نوفمبر، طلب محمد) لون الشريط بالنسبة: أحمر ≤ 5%، برتقالي حتى 89%، أصفر 90–99%، أخضر 100% — the bar color by share
+    const level = pct >= 100 ? 'full' : pct >= 90 ? 'high' : pct > 5 ? 'mid' : 'low';
+    return '<div class="ops-card upd-card upd-' + level + (reached || u.forced ? ' is-done' : '') + '" data-role="update-progress"><div class="ops-card-title">🔄 تقدّم التحديث — ' +
         (u.release ? 'الإصدار ' + esc(String(u.release)) : 'آخر نسخة') + (built ? ' <small>(' + esc(built) + ')</small>' : '') + '</div>' +
       '<div class="upd-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><div class="upd-fill" style="width:' + pct + '%"></div>' +
         '<div class="upd-target" style="inset-inline-start:' + target + '%"><span>' + target + '%</span></div><b class="upd-pct">' + pct + '%</b></div>' +
@@ -235,7 +244,7 @@
               '<span class="ops-pill-split"><span class="ops-split-dist">● توزيع ' + show_(d.totalStationsDistribution) + '</span><span class="ops-split-sub">● تحويل ' + show_(d.totalStationsSubstations) + '</span></span></div>' +
             '<div class="ops-pill ops-pill-adds"><span class="ops-pill-icon">' + ICONS.plus + '</span><b>' + show_(d.additionsToday) + '</b><span>إضافات اليوم</span></div>' +
             '<div class="ops-pill ops-pill-edits"><span class="ops-pill-icon">' + ICONS.pencil + '</span><b>' + show_(d.editsToday) + '</b><span>تعديلات اليوم</span></div>' +
-          '</div></div>' +
+          '</div>' + switchesRow_(d) + '</div>' +
         updateCard_(d.updateProgress) +
         // طلبات اليوم وعمليات الخصائص وأكثر 5 كما هي (قرار محمد) — today's requests, property operations and top 5 as they were
         '<div class="ops-status-card" data-role="quota"><div class="ops-status-ring">' + ring_(quota, 'quota', 84) + '</div><div class="ops-status-info">' +
