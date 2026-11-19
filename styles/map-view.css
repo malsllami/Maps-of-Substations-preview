@@ -159,3 +159,5 @@
 
 /* علامة السكينة قبل رقمها على الخريطة (11 نوفمبر) — the switch mark before its id on the map */
 .pin-sw{color:var(--sw);font-weight:900;margin-inline-end:2px;}
+/* (19 نوفمبر، تصميم محمد 4) حرف النوع في دبوس القريبة — the kind's letter in a nearby pin */
+.pin-k{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;color:#fff;font-size:10px;font-weight:800;margin-inline-end:3px;vertical-align:-2px;font-family:'IBM Plex Sans Arabic',sans-serif;}

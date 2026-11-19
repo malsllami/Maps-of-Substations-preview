@@ -82,7 +82,7 @@
     build_();
     current = { station: station, opts: opts || {}, opKey: global.SecApi.newOpKey('deleteStation'), busy: false };
     const SQ = global.SecStationQuery, sw = !!(SQ && SQ.isSwitch(station));
-    ui.station.textContent = (station.type === 'تحويل' ? '⚡ محطة تحويل ' : sw ? '◆ سكينة هوائية ' : '🏭 محطة توزيع ') + station.id + (station.region ? ' — ' + station.region : '');
+    ui.station.textContent = (station.type === 'تحويل' ? '⚡ محطة تحويل ' : sw ? '◆ سكينة هوائية ' : station.type === 'كبينة' ? '▣ كبينة توزيع ' : '🏭 محطة توزيع ') + station.id + (station.region ? ' — ' + station.region : '');
     ui.id.textContent = String(station.id);
     ui.input.value = ''; ui.input.disabled = false; ui.cancel.disabled = false;
     ui.confirm.disabled = true; ui.confirm.textContent = MSG.CONFIRM;

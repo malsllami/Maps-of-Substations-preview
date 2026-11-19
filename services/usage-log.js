@@ -20,7 +20,9 @@
   const doc = global.document, CONFIG = global.SEC2_CONFIG;
   const KEY = CONFIG.STORAGE_KEYS.USAGE_LOG;
   const COUNTERS = ['opens', 'minutes', 'offline', 'search', 'foundLocal', 'foundServer', 'notFound', 'outage', 'nav', 'navMinutes',
-    'google', 'share', 'viewData', 'viewStations', 'viewMore', 'details', 'nearby', 'feeder', 'ruler'];
+    'google', 'share', 'viewData', 'viewStations', 'viewMore', 'details', 'nearby', 'feeder', 'ruler',
+    // (19 نوفمبر) البحث البطيء والطلب الاحتياطي — إحصائية لا أعطال / slow search and the backup request — stats, not faults
+    'searchSlow30', 'searchSlow60', 'searchFailed', 'searchBackup', 'searchRescued'];
   // نقرات تُعدّ من مكان واحد: المحدد ← العدّاد — clicks counted in one place: selector ← counter
   const CLICKS = [['[data-act="google"]', 'google'], ['[data-act="share"]', 'share'], ['[data-act="details"]', 'details'],
     ['[data-nearby="nearby"]', 'nearby'], ['[data-nearby="feeder"],[data-act="feeder"]', 'feeder'], ['[data-tool="measure"]', 'ruler'],

@@ -43,7 +43,13 @@
     kb: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2.5"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>'
   };
   const CLOSE_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>';
-  const PROGRESS = '<div class="search-progress-track"><div class="search-progress-fill" data-role="fill"></div></div><div class="search-progress-label"><span>جاري البحث عن المحطة...</span><span data-role="pct">0%</span></div>';
+  const PROGRESS = '<div class="search-progress-track"><div class="search-progress-fill" data-role="fill"></div></div><div class="search-progress-label"><span>جاري البحث عن المحطة...</span><span data-role="pct">0%</span></div>' +
+    '<div class="search-slow" data-role="slow" hidden></div>'; // (19 نوفمبر) سطر الانتظار الطويل (تصميم محمد 1) / the long-wait line
+  // (19 نوفمبر، قرار محمد) البحث الطويل: سطر تحت الشريط بعد 30 ث و60 ث بلا أي طلب إضافي، وعند التعذّر زر إعادة يدوي
+  // the long search: a line under the bar after 30 s and 60 s with no extra request; on failure a manual retry button
+  const SLOW_TEXTS = ['⏳ البحث يستغرق وقتًا أطول من المعتاد، انتظر قليلًا…', '⏳ الاتصال بالخادم بطيء، ما زال البحث جاريًا…'];
+  function slowSteps_(o) { const ms = (o && o.slowMs) || (global.SEC2_CONFIG.TIMING || {}).SEARCH_SLOW_MS || [30000, 60000]; // o.slowMs: حدود أخرى عند التركيب (الاختبارات) / other thresholds at mount (tests)
+    return SLOW_TEXTS.map(function (t, i) { return [ms[i], t]; }); }
 
   /**
    * mount(container, opts) — opts: { variant: 'lens'|'bar', placeholder (للشريط، اختياري)، isLoggedIn() (افتراضيًا session.js), onFound(station),
@@ -106,9 +112,22 @@
     setKind_('station');
 
     // ===== شريط التقدّم (V1) — The progress bar (V1) =====
+    let slowTimers = [];
+    /* سطر الانتظار الطويل: يظهر بعد 30 ث ثم 60 ث ويتلوّن الشريط — the long-wait line after 30 s then 60 s, the bar turns amber */
+    function slow_(on) {
+      slowTimers.forEach(function (t) { global.clearTimeout(t); }); slowTimers = [];
+      const p = r('progress'), line = r('slow');
+      if (!p || !line) return;
+      p.classList.remove('is-slow'); line.hidden = true; line.textContent = '';
+      if (!on) return;
+      slowSteps_(o).forEach(function (s) {
+        slowTimers.push(global.setTimeout(function () { if (!busy) return; p.classList.add('is-slow'); line.textContent = s[1]; line.hidden = false; }, s[0]));
+      });
+    }
     function progress_(on) {
       const p = r('progress'), fill = r('fill'), pct = r('pct');
       global.clearInterval(progressTimer);
+      slow_(on);
       if (!p) return null; // أُزيل المربع (destroy) أثناء بحث جارٍ — the box was destroyed during a running search
       if (!on) { p.classList.remove('show'); fill.style.width = '0%'; pct.textContent = '0%'; return null; }
       p.classList.add('show');
@@ -147,6 +166,7 @@
       busy = true; box.classList.add('busy'); setHint_('');
       const bar = progress_(true);
       const t0 = global.performance.now(); // مدة البحث تُعرض في بطاقة المحطة (طلب محمد، 16 أكتوبر) / the search time, shown on the station card
+      const slowClock = startSlowClock_(); // (19 نوفمبر) للإحصائية: بلا زمن الخلفية ونوم الجوال، ومرة واحدة / for the stats: no background or sleep time, once
       try {
         const res = await SEARCH.find(raw, {
           onChecking: function () { setHint_(SEARCH.MSG.CHECKING); },
@@ -156,6 +176,7 @@
         // سجل الاستخدام اليومي (22 أكتوبر): البحث ونتيجته، أعداد فقط — the daily usage log: the search and its result, counts only
         const U = global.SecUsageLog;
         if (U) { U.count('search'); U.count(res.found ? (res.source === 'server' ? 'foundServer' : 'foundLocal') : 'notFound'); }
+        countSlow_(slowClock);
         if (res.found) {
           bar.finish(); setHint_('');
           if (!lens) input.value = '';
@@ -163,9 +184,29 @@
         } else { bar.stop(); notFound_(raw, !!res.unverified); }
         return res;
       } catch (err) {
-        bar.stop(); setHint_(SEARCH.MSG.CONNECTION, true);
+        bar.stop();
+        countSlow_(slowClock);
+        const U = global.SecUsageLog;
+        if (U) U.count('searchFailed'); // (19 نوفمبر) بحث تعذّر — لا يُعدّ «غير موجودة» / a failed search — never counted as «not found»
+        // (19 نوفمبر) تعذّر ≠ غير موجودة، وإعادة يدوية فقط بالزر (طلب جديد عند الضغط) — failed ≠ not found; a manual retry only
+        hint.className = hintCls + ' err';
+        hint.innerHTML = '<span class="search-failed">' + H.esc(SEARCH.MSG.CONNECTION) + '</span> <button type="button" class="search-retry-btn" data-act="research">↻ أعد</button>';
+        hint.dataset.query = raw;
         return { error: true };
       } finally { busy = false; box.classList.remove('busy'); }
+    }
+    /* (19 نوفمبر) إحصائية البحث البطيء في «سجل الاستخدام اليومي» (ليست أعطالًا) — slow-search counts in the daily usage log, not faults */
+    // الزمن الفعلي = ساعة الجهاز ناقص زمن الخلفية ونوم الجوال (من خدمة الاتصال)، فنوم الجوال لا يُعدّ بحثًا بطيئًا
+    // the real time = the wall clock minus background and sleep time (from the connection service), so sleep isn't a slow search
+    function pausedMs_() { const C = global.SecConnection; return C && C.pausedMs ? C.pausedMs() : 0; }
+    function startSlowClock_() { return { at: Date.now(), paused: pausedMs_(), counted: false }; }
+    function countSlow_(c) {
+      const U = global.SecUsageLog;
+      if (!U || c.counted) return; // مرة واحدة لكل بحث / once per search
+      c.counted = true;
+      const ms = Date.now() - c.at - (pausedMs_() - c.paused), steps = slowSteps_(o);
+      if (ms >= steps[0][0]) U.count('searchSlow30');
+      if (ms >= steps[1][0]) U.count('searchSlow60');
     }
 
     function clear() { input.value = ''; setHint_(''); delete hint.dataset.query; showKinds_(); }
@@ -179,6 +220,7 @@
       const act = t.dataset.act;
       if (act === 'add') { if (o.onAdd) o.onAdd(hint.dataset.query || ''); return; }
       if (act === 'retry') { clear(); input.focus(); return; }
+      if (act === 'research') { const q = hint.dataset.query || ''; if (q && !busy) search(q); return; } // (19 نوفمبر) إعادة يدوية / a manual retry
       if (act === 'tools') { t.setAttribute('aria-expanded', o.onTools() ? 'true' : 'false'); return; }
       if (act === 'close') { input.blur(); setKind_('station'); o.onClose(); return; }
       const kind = e.target.closest('.ssb-mode');

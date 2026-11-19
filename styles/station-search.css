@@ -104,6 +104,13 @@
   font-family:'JetBrains Mono',monospace;
 }
 .search-progress-label span:first-child{font-family:'IBM Plex Sans Arabic',sans-serif;font-weight:500;}
+/* (19 نوفمبر، تصميم محمد 1) الانتظار الطويل: سطر تحت الشريط والشريط برتقالي، وعند التعذّر زر إعادة يدوي — the long wait and manual retry */
+.search-slow{font-size:12px;font-weight:600;color:#E89A3C;line-height:1.5;}
+[data-theme="light"] .search-slow{color:#A65F12;}
+.is-slow .search-progress-fill{background:linear-gradient(90deg,#E89A3C,#F2C14E);box-shadow:0 0 10px rgba(232,154,60,.6);}
+.is-slow .search-progress-label{color:#E89A3C;}
+.search-retry-btn{display:inline-flex;align-items:center;gap:4px;margin-inline-start:6px;padding:4px 12px;border-radius:12px;border:1.5px solid #E0654F;background:transparent;color:#E0654F;font:inherit;font-size:12px;font-weight:700;cursor:pointer;min-height:30px;}
+.search-retry-btn:active{opacity:.7;}
 
 /* شريط بحث صفحة المحطة — the station page search bar */
 .search-and-back-row{display:none;align-items:center;gap:8px;width:100%;position:relative;z-index:6;}

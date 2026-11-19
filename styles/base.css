@@ -48,6 +48,8 @@
   --c-sub-bg:#18365A;   --c-sub-fg:#9CC8F7;   --c-sub-line:#3A6FAE;    /* التحويل — substations */
   --c-sw-bg:#3D2A17;    --c-sw-fg:#F5A55A;    --c-sw-line:#9A5E28;     /* السكاكين الهوائية (11 نوفمبر) — air-break switches */
   --sw:#E8833A; --sw-soft:rgba(232,131,58,0.14);
+  --c-cab-bg:#2E2142;   --c-cab-fg:#B79CF2;   --c-cab-line:#6E52A8;    /* كبائن التوزيع (19 نوفمبر) — distribution cabinets */
+  --cab:#9B7BE8; --cab-soft:rgba(155,123,232,0.14);
   --c-ops-bg:#3C3423;   --c-ops-fg:#E8C77E;   --c-ops-line:#7A6535;    /* العمليات والتعديلات — operations and edits */
   --c-alert-bg:#3A2B1F; --c-alert-fg:#F0A56C; --c-alert-line:#8A5A35;  /* الأعطال والتنبيهات — faults and alerts */
   --c-info-bg:#252F40;  --c-info-fg:#B4C3D6;  --c-info-line:#46566E;   /* المعلومات التقنية — technical info */
@@ -83,6 +85,8 @@
   --c-sub-bg:#E4EFFB;   --c-sub-fg:#1D4F8F;   --c-sub-line:#94B9E6;
   --c-sw-bg:#FCEBDD;    --c-sw-fg:#8F420C;    --c-sw-line:#EDB487;
   --sw:#C9641E; --sw-soft:rgba(201,100,30,0.10);
+  --c-cab-bg:#EFE8FC;   --c-cab-fg:#5B3BA8;   --c-cab-line:#C4B2EE;
+  --cab:#7A55D0; --cab-soft:rgba(122,85,208,0.10);
   --c-ops-bg:#F7EED8;   --c-ops-fg:#6E5212;   --c-ops-line:#D9C08A;
   --c-alert-bg:#F9E9D9; --c-alert-fg:#8E4518; --c-alert-line:#E3B58F;
   --c-info-bg:#EDF1F5;  --c-info-fg:#3A4C63;  --c-info-line:#BCC8D6;

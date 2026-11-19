@@ -120,6 +120,21 @@
 
 /* (11 نوفمبر) ثلاثة أنواع في صف واحد، وزرّا رمز السكينة — three types in one row, and the switch prefix buttons */
 .add-station-type .type-btn{padding:14px 6px;}
+/* (19 نوفمبر) أربعة أنواع في سطر واحد على الجوال — four types in one row on a phone */
+.add-station-type:has(> .type-btn:nth-child(4)){gap:6px;}
+.add-station-type:has(> .type-btn:nth-child(4)) .type-btn{padding:14px 2px;font-size:12.5px;white-space:nowrap;min-width:0;}
 .sw-btn{min-width:88px;padding:11px 16px;border-radius:11px;border:1.5px solid var(--border-strong);background:var(--bg);
   color:var(--text-secondary);font-size:15px;font-weight:700;letter-spacing:.5px;cursor:pointer;font-family:inherit;transition:.2s;}
 .sw-btn.active{background:var(--sw);border-color:var(--sw);color:#fff;}
+
+/* (19 نوفمبر، تصميم محمد 1) الكبينة: «C/» ثابتة ثم رقم المحطة ثم تسلسل صغير، وتحتها الرقم الكامل؛ وزر نوعها بنفسجي
+   The cabinet: a fixed «C/», the station number, a small sequence, the full id below; its type button purple */
+.type-btn[data-type="كبينة"].active{background:var(--cab);border-color:var(--cab);}
+.cab-id-row{display:flex;align-items:center;gap:6px;direction:ltr;}
+.cab-c{flex:0 0 auto;padding:10px 12px;border-radius:11px;background:var(--c-cab-bg);color:var(--c-cab-fg);border:1px solid var(--c-cab-line);
+  font-family:'JetBrains Mono',monospace;font-weight:800;font-size:15px;}
+.cab-dash{flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-weight:800;color:var(--c-cab-fg);}
+.cab-id-row [data-f="cabstation"]{flex:1 1 auto;min-width:0;direction:ltr;text-align:left;}
+.cab-id-row [data-f="cabseq"]{flex:0 0 74px;width:74px;direction:ltr;text-align:center;}
+.cab-preview{margin-top:6px;font-size:12.5px;font-weight:700;color:var(--c-cab-fg);font-family:'IBM Plex Sans Arabic',sans-serif;min-height:16px;}
+.add-station-error:not(:empty){white-space:normal;}

@@ -95,6 +95,12 @@
   }
 
   /* القراءة بطلب احتياطي؛ connection.js يسجّل النتيجة النهائية فقط — A read with a backup; connection.js logs only the final outcome */
+  /* (19 نوفمبر) عدّادات طلب البحث الاحتياطي في «سجل الاستخدام اليومي» (للبحث وحده) — the backup search counters, search only */
+  function countSearch_(action, name) {
+    if (action !== 'searchStation' || !global.SecUsageLog) return;
+    try { global.SecUsageLog.count(name); } catch (e) { /* العدّاد لا يكسر الطلب / a counter never breaks the request */ }
+  }
+
   function hedged_(action, body) {
     return new Promise(function (resolve, reject) {
       const tries = [];
@@ -104,6 +110,7 @@
       const launch = function () {
         if (settled || launched >= 2) return;
         launched++;
+        if (launched === 2) countSearch_(action, 'searchBackup'); // (19 نوفمبر) طلب بحث احتياطي أُرسل / a backup search request sent
         const controller = new global.AbortController();
         controller.signal.__secManaged = true; // النتيجة تُسجَّل هنا لا بمراقب الاتصال / the outcome is logged here
         const t = { controller: controller, invalid: false };
@@ -114,6 +121,7 @@
           global.clearTimeout(timer);
           tries.forEach(function (o) { if (o !== t) { o.controller.signal.__secHedgeLoser = true; o.controller.abort(); } });
           resolve(json);
+          if (t !== tries[0]) countSearch_(action, 'searchRescued'); // (19 نوفمبر) الاحتياطي أنقذ البحث / the backup rescued the search
           if (t !== tries[0]) global.setTimeout(function () {
             const c = conn(), a0 = attempt(tries[0]), a1 = attempt(t);
             if (c && c.reportRecovered && a0 && a1) c.reportRecovered(action, a0, a1);

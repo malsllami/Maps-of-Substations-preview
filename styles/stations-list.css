@@ -71,3 +71,4 @@
 
 /* السكينة الهوائية (11 نوفمبر) — the air-break switch */
 .sl-ic.is-switch{background:var(--c-sw-bg);color:var(--c-sw-fg);border:1px solid var(--c-sw-line);}
+.sl-ic.is-cabinet{background:var(--c-cab-bg);color:var(--c-cab-fg);border:1px solid var(--c-cab-line);}

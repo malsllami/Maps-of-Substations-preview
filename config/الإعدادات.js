@@ -81,6 +81,7 @@
     TIMING: {
       HEDGE_AFTER_MS: 8000,                    // طلب قراءة احتياطي بعد 8 ث بلا رد / a backup read after 8 s without a reply
       HEDGE_RETRY_AFTER_FAIL_MS: 1500,         // أو بعد 1.5 ث من فشل صريح / or 1.5 s after an explicit failure
+      SEARCH_SLOW_MS: [30000, 60000],          // (19 نوفمبر) سطرا الانتظار الطويل للبحث / the search's two long-wait lines
       SAVE_RETRY_DELAYS_MS: [5000, 8000],      // إعادة الحفظ بنفس مفتاح العملية / save retries with the same operation key
       // قواعد سجل الأخطاء (محمد 22 أكتوبر): المشاكل الحقيقية فقط — تأخير طلب دقيقتين فأكثر ثم نجح، أو خادم لا يرد دقيقتين
       // فأكثر والجهاز متصل والصفحة ظاهرة («تعطّل الموقع»). ما دونهما عابر لا يُسجَّل. Error-log rules: real problems only —

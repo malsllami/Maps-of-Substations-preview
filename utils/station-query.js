@@ -93,14 +93,42 @@
   /* الرقم الموحّد من رمز ورقم — The unified id from a prefix and a number */
   function switchId(prefix, num) { return prefix + '-' + latinUpper_(num).replace(/[^0-9]/g, ''); }
   /* رقم السكينة بصيغته الموحّدة، وأي رقم آخر كما هو — A switch id unified, any other id as is */
-  function canonicalId(id) { const p = switchParts(id); return p ? switchId(p.prefix, p.num) : id; }
-  function isSwitch(s) { return !!s && s.type !== 'تحويل' && !!switchParts(s.id); }
-  /* النوع للعرض: 'switch' | 'sub' | 'dist' — The kind for display */
-  function kindOf(s) { return s && s.type === 'تحويل' ? 'sub' : isSwitch(s) ? 'switch' : 'dist'; }
-  function kindLabel(s) { const k = kindOf(s); return k === 'sub' ? 'محطة تحويل' : k === 'switch' ? 'سكينة هوائية' : 'محطة توزيع'; }
+  function canonicalId(id) {
+    const c = cabinetParts(id); if (c) return cabinetId(c.station, c.seq); // (19 نوفمبر) الكبينة «C/39070-1» / the cabinet
+    const p = switchParts(id); return p ? switchId(p.prefix, p.num) : id;
+  }
+  function isSwitch(s) { return !!s && s.type !== 'تحويل' && s.type !== CABINET && !!switchParts(s.id); }
+
+  // ===== (19 نوفمبر، طلب محمد) كبائن التوزيع — Distribution cabinets =====
+  // نوع ثالث «كبينة» بجدول «كبائن التوزيع»، ورقمها «C/رقم المحطة-تسلسل» (C/39070-1). أي صيغة مكتوبة تُوحَّد كما في الخادم.
+  // A third type «كبينة» with its own sheet; its id «C/station-seq». Any typed form is unified as on the server.
+  const CABINET = 'كبينة';
+  const CABINET_RE = /^C\s*\/?\s*([0-9]+)(?:\s*[-‐-―−.,\/]\s*|\s+)([0-9]+)$/;
+  /* ← { station, seq } أو null — the station number and sequence, or null */
+  function cabinetParts(id) {
+    const m = CABINET_RE.exec(latinUpper_(id));
+    return m ? { station: m[1], seq: Number(m[2]) } : null;
+  }
+  function cabinetId(station, seq) { return 'C/' + latinUpper_(station).replace(/[^0-9]/g, '') + '-' + Number(seq); }
+  function isCabinet(s) { return !!s && s.type === CABINET; }
+  /* كبائن محطة من قائمة محلية بالتسلسل — a station's cabinets from a local list, by sequence */
+  function cabinetsOf(stations, station) {
+    const n = latinUpper_(station).replace(/[^0-9]/g, '');
+    return (stations || []).filter(function (s) { if (!isCabinet(s)) return false; const p = cabinetParts(s.id); return p && p.station === n; })
+      .sort(function (a, b) { return cabinetParts(a.id).seq - cabinetParts(b.id).seq; });
+  }
+
+  /* النوع للعرض: 'cabinet' | 'switch' | 'sub' | 'dist' — The kind for display */
+  function kindOf(s) { return s && s.type === 'تحويل' ? 'sub' : isCabinet(s) ? 'cabinet' : isSwitch(s) ? 'switch' : 'dist'; }
+  function kindLabel(s) { const k = kindOf(s); return k === 'sub' ? 'محطة تحويل' : k === 'switch' ? 'سكينة هوائية' : k === 'cabinet' ? 'كبينة توزيع' : 'محطة توزيع'; }
+  /* عنوان الرقم والمغذي حسب النوع (19 نوفمبر) — the id and feeder labels by kind */
+  function idLabel(s) { const k = kindOf(s); return k === 'cabinet' ? 'رقم الكبينة' : k === 'switch' ? 'رقم السكينة' : 'رقم المحطة'; }
+  function feederLabel(s) { return isCabinet(s) ? 'رقم الفيدر' : 'المغذي'; }
 
   global.SecStationQuery = {
     NEARBY_KM: NEARBY_KM, MAP_NEARBY_KM: MAP_NEARBY_KM, MAP_CLOSE_KM: MAP_CLOSE_KM, hasCoordinates: hasCoordinates, distanceKm: distanceKm, nearbyLocal: nearbyLocal, feederLocal: feederLocal, query: query,
-    SWITCH_PREFIXES: SWITCH_PREFIXES, switchParts: switchParts, switchId: switchId, canonicalId: canonicalId, isSwitch: isSwitch, kindOf: kindOf, kindLabel: kindLabel
+    SWITCH_PREFIXES: SWITCH_PREFIXES, switchParts: switchParts, switchId: switchId, canonicalId: canonicalId, isSwitch: isSwitch, kindOf: kindOf, kindLabel: kindLabel,
+    idLabel: idLabel, feederLabel: feederLabel,
+    CABINET: CABINET, cabinetParts: cabinetParts, cabinetId: cabinetId, isCabinet: isCabinet, cabinetsOf: cabinetsOf
   };
 })(typeof window !== 'undefined' ? window : globalThis);

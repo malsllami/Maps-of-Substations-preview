@@ -74,3 +74,20 @@
 .outage-missing-x{position:absolute;top:6px;right:8px;width:24px;height:24px;border-radius:50%;border:0;background:transparent;color:var(--text-secondary);cursor:pointer;}
 .map-tool-hint button{pointer-events:auto;}
 body:not(.nav-full) .view-map .map-panels > .outage-missing{border-color:rgba(224,101,79,0.6);}
+
+/* (19 نوفمبر، تصميم محمد) أداة «كبائن التوزيع»: حقل رقم المحطة، وقائمة الكبائن بشريط بنفسجي على طرف كل سطر (تصميم 4)
+   The «distribution cabinets» tool: the station field and the list, a purple bar on each row's edge (design 4) */
+.cab-input{width:100%;background:var(--bg);border:1px solid var(--border-strong);border-radius:10px;padding:10px 12px;color:var(--text-primary);
+  font-family:'JetBrains Mono',monospace;font-size:15px;direction:ltr;text-align:right;outline:none;}
+.cab-input:focus{border-color:var(--cab);}
+.cab-list{position:relative;z-index:6;width:100%;background:var(--bg-card);border-bottom:1px solid var(--border-strong);padding:10px 12px;
+  display:flex;flex-direction:column;gap:6px;max-height:42vh;overflow-y:auto;}
+.cab-list-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;color:var(--c-cab-fg);}
+.cab-list-head .outage-missing-x{position:static;}
+.cab-note{font-size:11.5px;color:var(--text-secondary);}
+.cab-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:var(--bg);
+  border:1px solid var(--border);border-inline-start:5px solid var(--cab);cursor:pointer;font-size:12px;font-weight:700;}
+.cab-id{flex:1;font-family:'JetBrains Mono',monospace;font-size:13.5px;color:var(--c-cab-fg);direction:ltr;text-align:right;}
+.cab-dist{color:var(--text-secondary);white-space:nowrap;}
+.cab-go{border:0;border-radius:9px;background:var(--cab);color:#fff;font:inherit;font-size:12.5px;font-weight:700;padding:7px 14px;cursor:pointer;min-height:34px;}
+.cab-go:active{opacity:.75;}

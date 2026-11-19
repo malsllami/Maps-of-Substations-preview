@@ -182,15 +182,43 @@
   global.addEventListener('pageshow', function (ev) { if (ev.persisted) lastVisibleAt = Date.now(); }); // رجوع من ذاكرة المتصفح / restored from the back-forward cache
   function hiddenClock_() { return hiddenTotalMs + (hiddenSince ? Date.now() - hiddenSince : 0); }
 
+  /* ===== (19 نوفمبر) نوم الجوال والصفحة ظاهرة — The phone asleep while the page is visible =====
+   * Android قد يجمّد التطبيق المثبّت أو ينام الجوال دون أن يُبلغ الصفحة أنها في الخلفية، فتتوقف كل المؤقتات ثم تنتهي مهلة
+   * الطلب فور الاستيقاظ — وكان ذلك يُسجَّل «تعطّل الموقع» بمئات الثواني (18 نوفمبر: 4268 ث و2911 ث من جوال واحد).
+   * نبضة كل 2 ث: فجوة أكثر من 15 ث بين نبضتين والصفحة ظاهرة = المؤقتات كانت متوقفة، وتُحسب «نومًا» مثل زمن الخلفية.
+   * الحد 15 ث حتى لا يُحسب عمل ثقيل عادي في الصفحة نومًا. والفجوة الجارية تُحسب فورًا أيضًا (frozenClock_)، لأن مهلة
+   * الطلب قد تنتهي قبل أول نبضة بعد الاستيقاظ.
+   * Android may freeze the installed app or the phone may sleep without telling the page it's hidden, so every timer stops
+   * and the request's timeout fires right on waking — it used to be logged as an outage. A 2 s heartbeat: a gap over 15 s
+   * while visible = timers were stopped, counted as sleep like background time; the running gap counts at once too. */
+  const BEAT_MS = 2000, FROZEN_GAP_MS = 15000;
+  let frozenTotalMs = 0, lastBeatAt = Date.now(), hiddenAtBeat = hiddenClock_();
+  const beating = typeof global.setInterval === 'function';
+  /* فجوة نبض تُحسب نومًا فقط إن بقيت الصفحة ظاهرة طوالها (زمن الخلفية يُحسب وحده) — a gap counts only if the page stayed visible */
+  function frozenGap_(now) {
+    const gap = now - lastBeatAt;
+    return gap > FROZEN_GAP_MS && hiddenClock_() === hiddenAtBeat && !hiddenSince ? gap - BEAT_MS : 0;
+  }
+  if (beating) {
+    global.setInterval(function () {
+      const now = Date.now();
+      frozenTotalMs += frozenGap_(now);
+      lastBeatAt = now; hiddenAtBeat = hiddenClock_();
+    }, BEAT_MS);
+  }
+  function frozenClock_() { return frozenTotalMs + (beating ? frozenGap_(Date.now()) : 0); }
+
   /* ===== محاولة طلب: كل ما نعرفه عنها — A request attempt: everything we know about it ===== */
   function startAttempt_(action, requestId) {
-    return { action: action, requestId: requestId, startedAt: Date.now(), hiddenAtStart: hiddenClock_(),
+    return { action: action, requestId: requestId, startedAt: Date.now(), hiddenAtStart: hiddenClock_(), frozenAtStart: frozenClock_(),
       hiddenAtStartNow: doc.visibilityState === 'hidden', sinceVisibleSec: (Date.now() - lastVisibleAt) / 1000, kind: 'pending' };
   }
   function endAttempt_(a, fields) {
     a.ms = Date.now() - a.startedAt;
     a.hiddenMs = hiddenClock_() - a.hiddenAtStart;
-    a.hiddenDuring = a.hiddenMs > 0 || a.hiddenAtStartNow;
+    a.frozenMs = frozenClock_() - (a.frozenAtStart || 0); // (19 نوفمبر) نوم الجوال أثناء الطلب / the phone asleep during the request
+    // نوم الجوال مثل الخلفية: زمنه ليس زمن شبكة ولا يُسجَّل فشلًا — sleep is like background: not network time, never logged as a failure
+    a.hiddenDuring = a.hiddenMs > 0 || a.hiddenAtStartNow || a.frozenMs > 0;
     a.offline = navigator.onLine === false;
     Object.keys(fields).forEach(function (k) { a[k] = fields[k]; });
     return a;
@@ -215,7 +243,8 @@
   /* وصف محاولة واحدة بالتفاصيل — one attempt described for the details column */
   function describeAttempt_(a) {
     const parts = ['requestId: ' + (a.requestId || '—'), 'الانتظار: ' + sec_(a.ms || 0),
-      'الصفحة بالخلفية أثناء الطلب: ' + (a.hiddenDuring ? 'نعم (مدة الخلفية: ' + sec_(a.hiddenMs) + ')' : 'لا'),
+      'الصفحة بالخلفية أثناء الطلب: ' + (a.hiddenMs > 0 || a.hiddenAtStartNow ? 'نعم (مدة الخلفية: ' + sec_(a.hiddenMs || 0) + ')' : 'لا'),
+      'الجهاز نام أثناء الطلب: ' + (a.frozenMs > 0 ? 'نعم (المدة: ' + sec_(a.frozenMs) + ')' : 'لا'), // (19 نوفمبر) / the phone asleep
       'منذ ظهور الصفحة عند بدء الطلب: ' + a.sinceVisibleSec.toFixed(1) + ' ث'];
     if (a.kind === 'http') {
       parts.push('الحالة: ' + a.status, 'رابط الرد: ' + (a.responseUrl || '—'), 'تحويل: ' + (a.redirected ? 'نعم' : 'لا'), 'نوع الرد: ' + (a.contentType || 'غير محدد'));
@@ -247,7 +276,8 @@
   function incidentMs_(attempts) {
     const start = Math.min.apply(null, attempts.map(function (a) { return a.startedAt; }));
     const end = Math.max.apply(null, attempts.map(function (a) { return a.startedAt + (a.ms || 0); }));
-    const hidden = Math.max.apply(null, attempts.map(function (a) { return a.hiddenMs || 0; }));
+    // زمن الخلفية ونوم الجوال لا يُحتسبان (19 نوفمبر: والنوم) — background and sleep time don't count
+    const hidden = Math.max.apply(null, attempts.map(function (a) { return (a.hiddenMs || 0) + (a.frozenMs || 0); }));
     return Math.max(0, end - start - hidden);
   }
   function failureMessage_(action, attempts) {
@@ -435,5 +465,7 @@
   }
 
   global.SecConnection = { lastOkAt: lastOkAt, pingUnlessRecent: pingUnlessRecent,
-    reportFailure: reportFailure, reportRecovered: reportRecovered, reportWrite: reportWrite, reportEvent: reportEvent };
+    reportFailure: reportFailure, reportRecovered: reportRecovered, reportWrite: reportWrite, reportEvent: reportEvent,
+    // (19 نوفمبر) زمن الخلفية ونوم الجوال حتى الآن — لإحصائية البحث البطيء / background and sleep time so far, for the slow-search stats
+    pausedMs: function () { return hiddenClock_() + frozenClock_(); } };
 })(window);

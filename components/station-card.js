@@ -36,8 +36,8 @@
 
   /* نص المشاركة (من V1)، بلا رابط إن لم تكن هناك إحداثيات — The share text (from V1), no link without coordinates */
   function shareText(s) {
-    const lines = [(Q.isSwitch(s) ? 'رقم السكينة: ' : 'رقم المحطة: ') + s.id]; // (11 نوفمبر) السكينة باسمها / a switch by its name
-    if (s.feeder) lines.push('المغذي: ' + s.feeder);
+    const lines = [Q.idLabel(s) + ': ' + s.id]; // (19 نوفمبر) والكبينة / and the cabinet // (11 نوفمبر) السكينة باسمها / a switch by its name
+    if (s.feeder) lines.push(Q.feederLabel(s) + ': ' + s.feeder);
     if (s.region) lines.push('المنطقة: ' + s.region);
     if (Q.hasCoordinates(s)) lines.push('رابط قوقل ماب: ' + googleMapsUrl(s));
     return lines.join('\n');
@@ -71,7 +71,8 @@
     'توزيع': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="19" r="2.5"/><circle cx="19" cy="19" r="2.5"/><path d="M12 7.5v4M12 11.5l-5.5 5.2M12 11.5l5.5 5.2"/></svg>',
     'تحويل': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h14l-3.5-3.5M20 16H6l3.5 3.5"/></svg>',
     // (11 نوفمبر) السكينة الهوائية: طرفان وشفرة مفتوحة — the air-break switch: two terminals and an open blade
-    'سكينة': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 17h3M19 17h3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M8.5 15.5 17 7"/></svg>'
+    'سكينة': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 17h3M19 17h3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M8.5 15.5 17 7"/></svg>',
+    'كبينة': '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M12 3v18M9.5 11h.01M14.5 11h.01"/></svg>' // (19 نوفمبر) كبينة توزيع: صندوق بباب مزدوج / a distribution cabinet
   };
   const BTN_ICON = {
     navigate: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M21 3 3 10.5l7.5 2.9L13.4 21z"/></svg>',
@@ -104,7 +105,7 @@
             '<div class="sheet-title sg-cell"><span class="sg-k">المحطة</span><span class="sheet-type sr-only ' + kind + '">' + Q.kindLabel(s) + '</span>' +
               '<bdi class="sheet-id">' + esc(s.id) + '</bdi><span class="sheet-explore-txt" data-role="explore-txt"></span></div>' +
             '<div class="sg-cell sg-region"><span class="sg-k">المنطقة</span><span class="ss-region">' + (s.region ? esc(s.region) : '—') + '</span></div>' +
-            '<div class="sg-cell sg-feeder"><span class="sg-k">المغذي</span><bdi class="sheet-feeder">' + (s.feeder ? esc(s.feeder) : '—') + '</bdi></div>' +
+            '<div class="sg-cell sg-feeder"><span class="sg-k">' + Q.feederLabel(s) + '</span><bdi class="sheet-feeder">' + (s.feeder ? esc(s.feeder) : '—') + '</bdi></div>' +
           '</div>' +
           // وضع الاستكشاف (قريب/مغذي): المسار وإنهاء العرض في السطر نفسه — explore mode: route and end in the same line
           '<div class="sheet-explore">' +

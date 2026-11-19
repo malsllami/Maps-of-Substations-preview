@@ -57,7 +57,12 @@
     DIST_DIGITS_ONLY: 'رقم محطة التوزيع أرقام، ويُسمح بحرف واحد بعدها لخلية الربط (مثل 1111 A) — إن كان رمز محطة تحويل فاختر النوع «تحويل»',
     SUB_NEEDS_LETTER: 'رمز محطة التحويل يبدأ بحروف — الرقم وحده محطة توزيع، فاختر النوع «توزيع»',
     SUB_SHAPE: 'رمز محطة التحويل حروف، ويُسمح برقم تسلسل واحد بعدها (مثل IC 1)',
-    SUB_IS_SWITCH: 'هذا رقم سكينة هوائية — اختر النوع «سكينة هوائية»'
+    SUB_IS_SWITCH: 'هذا رقم سكينة هوائية — اختر النوع «سكينة هوائية»',
+    // (19 نوفمبر) الكبائن — cabinets
+    CAB_STATION_REQUIRED: 'رقم المحطة مطلوب (أرقام فقط)',
+    CAB_SEQ_REQUIRED: 'التسلسل مطلوب (رقم من 1 فما فوق)',
+    ADDED_CABINET: '✓ تمت إضافة الكبينة بنجاح — يمكنك البحث عنها مباشرة',
+    FAR_CONFIRM: ' — إن كان صحيحًا اضغط «تأكيد الحفظ رغم البعد»'
   };
 
   /* (15 نوفمبر، قواعد محمد) نفس قواعد الخادم stationIdShapeError_ — the server's rules:
@@ -112,18 +117,29 @@
     return el;
   }
 
+  /* (19 نوفمبر، تصميم محمد 1) رقم الكبينة: «C/» ثابتة + رقم المحطة + تسلسل يُقترح تلقائيًا ويمكن تغييره، وتحتهما الرقم الكامل
+   * The cabinet id: a fixed «C/» + the station number + a sequence suggested automatically and editable, the full id below */
+  function cabBlock_() {
+    return '<div data-role="cab" hidden><label class="form-field-label">رقم الكبينة</label>' +
+      '<div class="cab-id-row"><span class="cab-c">C/</span>' + input_('cabstation', 'رقم المحطة', ' inputmode="numeric"') +
+      '<span class="cab-dash">-</span>' + input_('cabseq', 'تسلسل', ' inputmode="numeric"') + '</div>' +
+      '<div class="cab-preview" data-role="cabpreview"></div></div>';
+  }
+
   function addHtml_() {
     return '<div class="add-station-panel"><div class="sf-form" data-role="form">' +
         '<div><label class="form-field-label">نوع المحطة</label><div class="add-station-type">' +
           '<button class="type-btn active" type="button" data-type="توزيع">توزيع</button><button class="type-btn" type="button" data-type="تحويل">تحويل</button>' +
-          '<button class="type-btn" type="button" data-type="' + SWITCH + '">سكينة هوائية</button></div></div>' +
+          '<button class="type-btn" type="button" data-type="' + SWITCH + '">سكينة هوائية</button>' +
+          '<button class="type-btn" type="button" data-type="' + Q.CABINET + '">كبينة</button></div></div>' +
+        cabBlock_() +
         // (11 نوفمبر) رمز السكينة: زرّان ثابتان، والعضو يكتب الرقم فقط — the switch prefix: two fixed buttons, the member types the number only
         '<div data-role="sw" hidden><label class="form-field-label">الرمز</label><div class="add-station-type sw-prefix">' +
           Q.SWITCH_PREFIXES.map(function (p, i) { return '<button class="sw-btn' + (i ? '' : ' active') + '" type="button" data-prefix="' + p + '">' + p + '</button>'; }).join('') + '</div></div>' +
-        '<div><label class="form-field-label" data-role="idlabel">رقم المحطة</label>' + input_('id', 'مثال: 39070') + '</div>' +
+        '<div data-role="idrow"><label class="form-field-label" data-role="idlabel">رقم المحطة</label>' + input_('id', 'مثال: 39070') + '</div>' +
         '<div class="sf-row sf-dist" data-role="dist">' +
-          '<div class="sf-col"><label class="form-field-label">المغذي (اختياري)</label>' + input_('feeder', 'مثال: SNB38') + '</div>' +
-          '<div class="sf-col"><label class="form-field-label">المنطقة</label>' + input_('region', 'مثال: القرينية') + '</div></div>' +
+          '<div class="sf-col"><label class="form-field-label" data-role="feederlabel">المغذي (اختياري)</label>' + input_('feeder', 'مثال: SNB38') + '</div>' +
+          '<div class="sf-col"><label class="form-field-label" data-role="regionlabel">المنطقة</label>' + input_('region', 'مثال: القرينية') + '</div></div>' +
         coordsBlock_() +
         '<div><label class="form-field-label">سبب الإضافة</label>' + input_('reason', 'مثال: محطة جديدة بحي القرينية لتغذية المنطقة الصناعية') + '</div>' +
         '<div class="add-station-error" data-role="error" role="alert"></div>' +
@@ -139,8 +155,9 @@
         '<div class="sf-sw-edit" data-role="sw" hidden><div><label class="form-field-label">الرمز</label><div class="add-station-type sw-prefix">' +
           Q.SWITCH_PREFIXES.map(function (p, i) { return '<button class="sw-btn' + (i ? '' : ' active') + '" type="button" data-prefix="' + p + '">' + p + '</button>'; }).join('') + '</div></div>' +
           '<div><label class="form-field-label">رقم السكينة</label>' + input_('swnum', 'مثال: 150', ' inputmode="numeric"') + '</div></div>' +
+        cabBlock_() +
         '<div class="sf-dist-edit" data-role="dist">' +
-          '<div><label class="form-field-label">المغذي</label>' + input_('feeder', 'مثال: SNB38') + '</div>' +
+          '<div><label class="form-field-label" data-role="feederlabel">المغذي</label>' + input_('feeder', 'مثال: SNB38') + '</div>' +
           '<div><label class="form-field-label">المنطقة</label>' + input_('region', 'مثال: القرينية') + '</div></div>' +
         coordsBlock_() +
         '<div><label class="form-field-label">سبب التعديل</label>' + input_('reason', 'مثال: تصحيح موقع المحطة بعد معاينة ميدانية') + '</div>' +
@@ -167,10 +184,15 @@
       TI.digits(f('swnum'));
       f('swnum').addEventListener('input', function () { const d = f('swnum').value.replace(/[^0-9]/g, ''); if (d !== f('swnum').value) f('swnum').value = d; });
     }
+    // (19 نوفمبر) الكبينة: رقم المحطة والتسلسل أرقام فقط، والتسلسل يُقترح عند كتابة المحطة ما لم يغيّره العضو
+    // the cabinet: station and sequence digits only; the sequence is suggested as the station is typed unless the member changed it
+    ['cabstation', 'cabseq'].forEach(function (n) { TI.digits(f(n)); f(n).addEventListener('input', function () { const d = TI.normalizeDigits(f(n).value).replace(/[^0-9]/g, ''); if (d !== f(n).value) f(n).value = d; form.confirmFar = false; cabPreview_(form); }); });
+    f('cabseq').addEventListener('input', function () { form.seqTouched = !!f('cabseq').value; });
+    f('cabstation').addEventListener('input', function () { suggestSeq_(form); });
     TI.upper(f('feeder')); TI.digits(f('region')); TI.digits(f('reason'));
     TI.coord(f('lat')); TI.coord(f('lng')); TI.coordPair(f('paste'));
-    f('lat').addEventListener('input', function () { syncPreview_(form); });
-    f('lng').addEventListener('input', function () { syncPreview_(form); });
+    f('lat').addEventListener('input', function () { form.confirmFar = false; syncPreview_(form); });
+    f('lng').addEventListener('input', function () { form.confirmFar = false; syncPreview_(form); });
     el.addEventListener('click', function (e) { onClick_(form, e); });
     return form;
   }
@@ -188,7 +210,14 @@
     form.type = type;
     form.el.querySelectorAll('.type-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.type === type); });
     form.r('dist').hidden = type === 'تحويل';
+    // (19 نوفمبر) الكبينة: صف «C/ محطة - تسلسل» بدل رقم المحطة، و«رقم الفيدر» و«الحي» — the cabinet row, «feeder no.» and «district»
+    const cab = type === Q.CABINET;
+    form.r('cab').hidden = !cab;
+    form.r('feederlabel').textContent = cab ? 'رقم الفيدر (اختياري)' : form.mode === 'add' ? 'المغذي (اختياري)' : 'المغذي';
+    if (form.r('regionlabel')) form.r('regionlabel').textContent = cab ? 'الحي' : 'المنطقة';
+    form.confirmFar = false;
     if (form.mode !== 'add') return;
+    form.r('idrow').hidden = cab;
     // السكينة: صف الرمز، والرقم أرقام فقط بلوحة الأرقام — the switch: the prefix row, the number digits only on the number pad
     const sw = type === SWITCH, id = form.f('id');
     form.r('sw').hidden = !sw;
@@ -197,8 +226,35 @@
     id.inputMode = type === 'تحويل' ? 'text' : 'numeric';
     id.placeholder = sw ? 'مثال: 150' : type === 'تحويل' ? 'مثال: IC 1' : 'مثال: 39070';
     if (sw) id.value = id.value.replace(/[^0-9]/g, '');
-    form.r('submit').textContent = sw ? 'حفظ السكينة' : 'حفظ المحطة';
-    form.r('title').textContent = sw ? '+ إضافة سكينة هوائية' : '+ إضافة محطة جديدة';
+    form.r('submit').textContent = sw ? 'حفظ السكينة' : cab ? 'حفظ الكبينة' : 'حفظ المحطة';
+    form.r('title').textContent = sw ? '+ إضافة سكينة هوائية' : cab ? '+ إضافة كبينة توزيع' : '+ إضافة محطة جديدة';
+    if (cab) cabPreview_(form);
+  }
+
+  /* «ستُحفظ: C/39070-3» تحت الحقلين — «will be saved as» under the two fields */
+  function cabPreview_(form) {
+    const st = form.f('cabstation').value, sq = form.f('cabseq').value, p = form.r('cabpreview');
+    if (!p) return;
+    p.textContent = st && sq ? '← ستُحفظ: ' + Q.cabinetId(st, sq) + (form.seqSuggested && !form.seqTouched ? ' (التالي تلقائيًا)' : '') : '';
+  }
+  /* التسلسل التالي: من نسخة الجهاز فورًا، ثم من الخادم إن اتصل (المرجع)؛ والحي من المحطة إن كان فارغًا
+   * The next sequence: from the device copy at once, then from the server when online (authoritative); the district from the station */
+  let seqTimer = null;
+  function suggestSeq_(form) {
+    if (form.mode !== 'add' || form.type !== Q.CABINET) return;
+    const st = form.f('cabstation').value;
+    global.clearTimeout(seqTimer);
+    if (!st) { if (!form.seqTouched) form.f('cabseq').value = ''; cabPreview_(form); return; }
+    const SYNC = global.SecStationsSync, list = SYNC && SYNC.state && SYNC.state().loaded ? SYNC.stations() : [];
+    const local = Q.cabinetsOf(list, st), next = local.length ? Q.cabinetParts(local[local.length - 1].id).seq + 1 : 1;
+    const apply = function (n) { if (form.seqTouched || form.f('cabstation').value !== st) return; form.f('cabseq').value = String(n); form.seqSuggested = true; cabPreview_(form); };
+    apply(next);
+    const station = list.filter(function (x) { return x.type === 'توزيع' && String(x.id).trim() === st; })[0];
+    if (station && station.region && !form.f('region').value) form.f('region').value = station.region;
+    seqTimer = global.setTimeout(function () {
+      if (global.navigator.onLine === false || !global.SecApi) return;
+      global.SecApi.call('nextCabinetSeq', { station: st }, { phone: true }).then(function (r) { if (r && r.success && r.next) apply(Math.max(r.next, next)); }).catch(function () { /* نسخة الجهاز تكفي / the copy is enough */ });
+    }, 500);
   }
   function setPrefix_(form, prefix) {
     form.prefix = prefix;
@@ -288,13 +344,24 @@
     const loggedIn = !deps.isLoggedIn || deps.isLoggedIn();
     if (!loggedIn) return form.mode === 'add' ? MSG.LOGIN_ADD : MSG.LOGIN_EDIT;
     const sw = form.mode === 'add' && form.type === SWITCH;
-    const dist = sw || (form.mode === 'add' ? form.type : form.station.type) === 'توزيع';
+    const kind = form.mode === 'add' ? form.type : form.station.type, cab = kind === Q.CABINET;
+    const dist = sw || cab || kind === 'توزيع'; // التوزيع والسكاكين والكبائن بمغذٍّ ومنطقة / with feeder and region
     const feeder = dist ? TI.normalizeCode(form.f('feeder').value.trim()) : '';
     const region = dist ? TI.stripInvisible(form.f('region').value.trim()) : '';
     const reason = TI.stripInvisible(form.f('reason').value.trim());
     const at = readCoords_(form);
     if (form.mode === 'add') {
       // السكينة: الرمز المختار + الأرقام فقط ← «BS-150»، وتُحفظ صفًا في جدول التوزيع — the switch: prefix + digits ← «BS-150», a distribution row
+      if (cab) { // (19 نوفمبر) الكبينة — the cabinet
+        const st = form.f('cabstation').value, sq = Number(form.f('cabseq').value);
+        if (!st) return MSG.CAB_STATION_REQUIRED;
+        if (!sq) return MSG.CAB_SEQ_REQUIRED;
+        if (!region) return MSG.REGION_REQUIRED;
+        if (!at) return MSG.ADD_COORDS;
+        const cid = Q.cabinetId(st, sq);
+        return { action: 'addNewStation', station: { id: cid, type: Q.CABINET, feeder: feeder, region: region, lat: at.lat, lng: at.lng },
+          payload: { stationId: cid, type: Q.CABINET, lat: at.lat, lng: at.lng, feeder: feeder, region: region, reason: reason, confirmFar: form.confirmFar === true || undefined } };
+      }
       const typed = TI.normalizeCode(form.f('id').value.trim());
       const num = sw ? typed.replace(/[^0-9]/g, '') : '';
       if (sw && !num) return MSG.SWITCH_ID_REQUIRED;
@@ -311,6 +378,14 @@
     // السكينة: الرمز والرقم من النموذج؛ تغيّرهما ← newStationId — a switch: prefix and number from the form; changed ← newStationId
     const isSw = Q.isSwitch(s);
     let newId = '';
+    if (cab) { // (19 نوفمبر) الكبينة: تغيير رقم المحطة أو التسلسل ← newStationId — the cabinet: a changed station or sequence
+      const st = form.f('cabstation').value, sq = Number(form.f('cabseq').value);
+      if (!st) return MSG.CAB_STATION_REQUIRED;
+      if (!sq) return MSG.CAB_SEQ_REQUIRED;
+      const want = Q.cabinetId(st, sq);
+      if (want !== String(s.id).trim().toUpperCase()) newId = want;
+      if (!region && !s.region) return MSG.REGION_REQUIRED;
+    }
     if (isSw) {
       const num = TI.normalizeDigits(form.f('swnum').value).replace(/[^0-9]/g, '');
       if (!num) return MSG.SWITCH_ID_REQUIRED;
@@ -365,6 +440,13 @@
     const bar = progress_(form);
     try {
       const res = await global.SecApi.call(v.action, v.payload, { phone: true, onRetry: bar.retry });
+      // (19 نوفمبر، قرار محمد) الكبينة أبعد من 1.5 كم عن محطتها ← تنبيه واضح، والضغط ثانية يحفظ رغم البعد
+      // the cabinet over 1.5 km from its station ← a clear warning; pressing again saves anyway
+      if (res && res.farWarning) {
+        form.confirmFar = true;
+        const sub = form.r('submit'); if (sub) sub.textContent = 'تأكيد الحفظ رغم البعد';
+        throw new Error('⚠ ' + res.message + MSG.FAR_CONFIRM);
+      }
       if (!res || !res.success) throw new Error((res && res.error) || MSG.FAILED);
       bar.done();
       try { if (deps.onSaved) deps.onSaved(v.station, form.mode, v.oldId ? { oldId: v.oldId } : undefined); } catch (e) { /* الحفظ تم؛ خطأ الصفحة لا يُظهره فاشلًا / saved; a page error doesn't make it look failed */ }
@@ -372,7 +454,8 @@
       try { if (global.SecProfileCache) global.SecProfileCache.recordSave(v.station, form.mode); } catch (e) { /* لا يمس الحفظ / never touches the save */ }
       await new Promise(function (r) { global.setTimeout(r, 300); });
       bar.stop();
-      if (form.mode === 'add') form.r('okText').textContent = Q.isSwitch(v.station) ? MSG.ADDED_SWITCH : MSG.ADDED;
+      if (form.mode === 'add') form.r('okText').textContent = Q.isSwitch(v.station) ? MSG.ADDED_SWITCH : Q.isCabinet(v.station) ? MSG.ADDED_CABINET : MSG.ADDED;
+      form.confirmFar = false;
       form.r('form').hidden = true;
       form.r('success').hidden = false;
     } catch (err) {
@@ -386,7 +469,8 @@
   }
 
   function clearFields_(form) {
-    ['id', 'swnum', 'feeder', 'region', 'lat', 'lng', 'paste', 'reason'].forEach(function (n) { const i = form.f(n); if (i) i.value = ''; });
+    ['id', 'swnum', 'cabstation', 'cabseq', 'feeder', 'region', 'lat', 'lng', 'paste', 'reason'].forEach(function (n) { const i = form.f(n); if (i) i.value = ''; });
+    form.seqTouched = false; form.seqSuggested = false; form.confirmFar = false; if (form.r('cabpreview')) form.r('cabpreview').textContent = '';
     error_(form, '');
     form.r('form').hidden = false; form.r('success').hidden = true;
   }
@@ -428,9 +512,14 @@
     close();
     clearFields_(edit);
     edit.station = Object.assign({}, station);
-    edit.r('title').textContent = (Q.isSwitch(station) ? 'تعديل السكينة: ' : 'تعديل: ') + station.id;
-    edit.r('dist').hidden = station.type !== 'توزيع';
-    const sp = Q.switchParts(station.id); // السكينة: الرمز والرقم معبّآن — a switch: prefix and number filled
+    const cab = Q.isCabinet(station); // (19 نوفمبر) الكبينة: رقم المحطة والتسلسل معبّآن وقابلان للتغيير / the cabinet: station and sequence filled, editable
+    edit.r('title').textContent = (Q.isSwitch(station) ? 'تعديل السكينة: ' : cab ? 'تعديل الكبينة: ' : 'تعديل: ') + station.id;
+    edit.r('dist').hidden = station.type !== 'توزيع' && !cab;
+    edit.r('cab').hidden = !cab;
+    edit.r('feederlabel').textContent = cab ? 'رقم الفيدر' : 'المغذي';
+    const cp = cab ? Q.cabinetParts(station.id) : null;
+    if (cp) { edit.f('cabstation').value = cp.station; edit.f('cabseq').value = String(cp.seq); cabPreview_(edit); }
+    const sp = cab ? null : Q.switchParts(station.id); // السكينة: الرمز والرقم معبّآن — a switch: prefix and number filled
     edit.r('sw').hidden = !(sp && station.type !== 'تحويل');
     if (sp) { setPrefix_(edit, sp.prefix); edit.f('swnum').value = sp.num; }
     edit.f('feeder').value = station.feeder || '';

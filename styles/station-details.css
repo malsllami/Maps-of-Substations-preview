@@ -76,3 +76,6 @@
 .sd-badge.is-switch{background:var(--c-sw-bg);color:var(--c-sw-fg);border:1px solid var(--c-sw-line);}
 .sd-type.is-switch{color:var(--c-sw-fg);}
 .sd-near-ic.is-switch{background:var(--c-sw-bg);color:var(--c-sw-fg);}
+.sd-badge.is-cabinet{background:var(--c-cab-bg);color:var(--c-cab-fg);border:1px solid var(--c-cab-line);}
+.sd-type.is-cabinet{color:var(--c-cab-fg);}
+.sd-near-ic.is-cabinet{background:var(--c-cab-bg);color:var(--c-cab-fg);}

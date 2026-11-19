@@ -38,22 +38,25 @@
   /* withDist: القريبة — الرقم وتحته المسافة من المحطة المبحوث عنها (نموذج محمد 20 أكتوبر)؛ المغذي: الرقم وحده
    * withDist: nearby — the number with the distance from the searched station under it; feeder: the number alone */
   /* رمز قبل الرقم: ⚡ تحويل، ◆ برتقالي للسكينة (11 نوفمبر، النموذج 1) — the mark before the id: ⚡ substation, an orange ◆ switch */
-  function glyph_(s) { return s.type === 'تحويل' ? '⚡' : Q.isSwitch(s) ? '<b class="pin-sw">◆</b>' : ''; }
+  // (19 نوفمبر، تصميم محمد 4) لكل نوع لون وحرف: الدبوس بلون نوعه وحرفه الأول — each kind its color and letter: the pin in its kind's color
+  const KIND = { dist: { c: '#2BB59A', l: 'ت' }, sub: { c: '#3E8DE0', l: 'ح' }, switch: { c: '#E8833A', l: 'س' }, cabinet: { c: '#9B7BE8', l: 'ك' } };
+  function kind_(s) { return KIND[Q.kindOf(s)] || KIND.dist; }
+  function glyph_(s) { const k = kind_(s); return '<b class="pin-k" style="background:' + k.c + '">' + k.l + '</b>'; }
   function pinIcon_(s, t, withDist) {
     const scale = t.tier === 0 ? 1 : t.tier === 1 ? 0.92 : 0.82, opacity = t.tier === 0 ? 1 : t.tier === 1 ? 0.92 : 0.72;
     const w = Math.round(52 * scale), h = Math.round((withDist ? 36 : 22) * scale);
     return global.L.divIcon({
       className: '',
-      html: '<div class="nearby-pin-wrap" style="transform:scale(' + scale + ');opacity:' + opacity + '"><div class="nearby-pin-card' + (withDist ? ' has-dist' : '') + '" style="border-color:' + t.color + '">' +
+      html: '<div class="nearby-pin-wrap" style="transform:scale(' + scale + ');opacity:' + opacity + '"><div class="nearby-pin-card' + (withDist ? ' has-dist' : '') + '" style="border-color:' + kind_(s).c + '">' +
         '<span>' + glyph_(s) + H.esc(s.id) + '</span>' + (withDist ? '<small class="nearby-pin-dist" style="color:' + t.color + '">' + dist_(s._dist) + '</small>' : '') + '</div>' +
-        '<div class="nearby-pin-tail" style="border-top-color:' + t.color + '"></div></div>',
+        '<div class="nearby-pin-tail" style="border-top-color:' + kind_(s).c + '"></div></div>',
       iconSize: [w, h + 6], iconAnchor: [w / 2, h + 6]
     });
   }
   function popup_(s, mapsUrl) {
     return '<div class="sb-inner nearby-popup"><div class="sb-data-row">' +
-      '<div class="sb-data-cell"><div class="cell-label">' + (s.type === 'تحويل' ? '⚡ رقم المحطة' : Q.isSwitch(s) ? '◆ رقم السكينة' : '🏭 رقم المحطة') + '</div><div class="cell-value">' + H.esc(s.id) + '</div></div>' +
-      (s.feeder ? '<div class="sb-data-cell"><div class="cell-label">🔌 المغذي</div><div class="cell-value">' + H.esc(s.feeder) + '</div></div>' : '') +
+      '<div class="sb-data-cell"><div class="cell-label">' + (s.type === 'تحويل' ? '⚡ رقم المحطة' : Q.isSwitch(s) ? '◆ رقم السكينة' : Q.isCabinet(s) ? '▣ رقم الكبينة' : '🏭 رقم المحطة') + '</div><div class="cell-value">' + H.esc(s.id) + '</div></div>' +
+      (s.feeder ? '<div class="sb-data-cell"><div class="cell-label">🔌 ' + Q.feederLabel(s) + '</div><div class="cell-value">' + H.esc(s.feeder) + '</div></div>' : '') +
       '<div class="sb-data-cell"><div class="cell-label">📏 المسافة</div><div class="cell-value">' + s._dist.toFixed(2) + ' كم</div></div></div>' +
       '<div class="st-actions"><a href="' + H.esc(mapsUrl) + '" target="_blank" rel="noopener" class="st-btn primary">قوقل ماب 🧭</a>' +
       '<button type="button" class="st-btn" data-nearby-act="share">مشاركة 📤</button><button type="button" class="st-btn" data-nearby-act="edit">تعديل ✏️</button></div></div>';
@@ -99,7 +102,7 @@
       // The dot size by zoom: small when the whole range shows (thousands stay readable as a spread), larger as you zoom in
       const dotR = zoom <= 12 ? 2.2 : zoom === 13 ? 3 : zoom === 14 ? 4 : 5, dotW = zoom <= 13 ? 0 : 1;
       data.forEach(function (s) {
-        const dot = L.circleMarker([s.lat, s.lng], { renderer: dotRenderer, radius: dotR, color: '#08101A', weight: dotW, fillColor: tier(s._dist).color, fillOpacity: 0.9 });
+        const dot = L.circleMarker([s.lat, s.lng], { renderer: dotRenderer, radius: dotR, color: '#08101A', weight: dotW, fillColor: kind_(s).c, fillOpacity: 0.9 }); // لون النوع (19 نوفمبر) / the kind's color
         dot.bindPopup(popup_(s, deps.googleMapsUrl ? deps.googleMapsUrl(s) : ''));
         dot._secStation = s;
         markers.push(dot.addTo(map));
@@ -114,7 +117,7 @@
       data.slice().sort(function (a, b) { return a._dist - b._dist; }).some(function (s) {
         const p = map.latLngToContainerPoint([s.lat, s.lng]);
         if (p.x < 0 || p.y < 0 || p.x > size.x || p.y > size.y) return false;
-        const w = String(s.id).length * 7.5 + (s.type === 'تحويل' || Q.isSwitch(s) ? 12 : 0) + 20, h = (mode === 'nearby' ? 36 : 22) + 6;
+        const w = String(s.id).length * 7.5 + 18 + 20, h = (mode === 'nearby' ? 36 : 22) + 6;
         const b = { x1: p.x - w / 2 - CARD_GAP, y1: p.y - h - CARD_GAP, x2: p.x + w / 2 + CARD_GAP, y2: p.y + CARD_GAP };
         if (boxes.some(function (o) { return b.x1 < o.x2 && b.x2 > o.x1 && b.y1 < o.y2 && b.y2 > o.y1; })) return false;
         boxes.push(b); show.push(s);
@@ -123,7 +126,8 @@
       show.forEach(function (s) {
         const mk = L.marker([s.lat, s.lng], { icon: pinIcon_(s, tier(s._dist), mode === 'nearby') });
         mk.bindPopup(popup_(s, deps.googleMapsUrl ? deps.googleMapsUrl(s) : ''));
-        mk.bindTooltip(H.esc(s.id) + ' — ' + s._dist.toFixed(2) + ' كم', { direction: 'top', offset: [0, -16] });
+        mk.bindTooltip(H.esc(Q.kindLabel(s) + ' ' + s.id) + ' — ' + s._dist.toFixed(2) + ' كم', // الاسم الكامل (19 نوفمبر) / the full name
+          { direction: 'top', offset: [0, -16] });
         mk._secStation = s;
         mk.addTo(map);
         markers.push(mk);

@@ -25,7 +25,8 @@
   const TYPE_ICON = { // الرمزان المعتمدان — the approved symbols
     'توزيع': '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="19" r="2.5"/><circle cx="19" cy="19" r="2.5"/><path d="M12 7.5v4M12 11.5l-5.5 5.2M12 11.5l5.5 5.2"/></svg>',
     'تحويل': '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h14l-3.5-3.5M20 16H6l3.5 3.5"/></svg>',
-    'سكينة': '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 17h3M19 17h3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M8.5 15.5 17 7"/></svg>' // (11 نوفمبر) السكينة الهوائية / the air-break switch
+    'سكينة': '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 17h3M19 17h3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M8.5 15.5 17 7"/></svg>', // (11 نوفمبر) السكينة الهوائية / the air-break switch
+    'كبينة': '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M12 3v18M9.5 11h.01M14.5 11h.01"/></svg>' // (19 نوفمبر) كبينة توزيع: صندوق بباب مزدوج / a distribution cabinet
   };
   function icon_(s) { return TYPE_ICON[Q.isSwitch(s) ? 'سكينة' : s.type] || TYPE_ICON['توزيع']; }
   const ICON = {
@@ -76,9 +77,9 @@
     /* المعلومات: الصفوف، وزرّان فقط: مشاركة وتعديل (طلب محمد 20 أكتوبر) — info: the rows and only two buttons, share and edit */
     function drawInfo_(p) {
       const list = el_('div', 'sd-list');
-      list.appendChild(row_(Q.isSwitch(s) ? 'رقم السكينة' : 'رقم المحطة', String(s.id), { mono: true }));
+      list.appendChild(row_(Q.idLabel(s), String(s.id), { mono: true }));
       list.appendChild(row_('النوع', Q.kindLabel(s)));
-      if (s.feeder) list.appendChild(row_('المغذي', String(s.feeder), { mono: true }));
+      if (s.feeder) list.appendChild(row_(Q.feederLabel(s), String(s.feeder), { mono: true }));
       if (s.region) list.appendChild(row_('المنطقة', String(s.region)));
       const fc = feederCount_();
       if (fc != null) list.appendChild(row_('محطات المغذي', fc + ' محطة'));

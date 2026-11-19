@@ -52,7 +52,7 @@
     ['SecApi', 'services/api-client.js'], ['SecDates', 'utils/dates.js'], ['SecStationQuery', 'utils/station-query.js'],
     ['SecMyLocation', 'services/my-location.js'], ['SecAppHeader', 'components/app-header.js'], ['SecConnStatus', 'components/connection-status.js'],
     ['SecGlobe', 'components/globe.js'], ['SecMapView', 'components/map-view.js'], ['SecDistrictLabels', 'components/district-labels.js'],
-    ['SecStationCard', 'components/station-card.js'], ['SecNearbyLayer', 'components/nearby-layer.js'], ['SecOutageSearch', 'components/outage-search.js'],
+    ['SecStationCard', 'components/station-card.js'], ['SecNearbyLayer', 'components/nearby-layer.js'], ['SecOutageSearch', 'components/outage-search.js'], ['SecCabinetsTool', 'components/cabinets-tool.js'],
     ['SecMapTools', 'components/map-tools.js'], ['SecNavView', 'components/navigation-view.js'], ['SecStationSearchBox', 'components/station-search-box.js'],
     ['SecStationForm', 'components/add-edit-station.js'], ['SecDeleteStation', 'components/delete-station.js'], ['SecRecentStations', 'components/recent-stations.js'],
     ['SecStatsCards', 'components/stats-cards.js'], ['SecStorageSection', 'components/storage-section.js'], ['SecProfileGate', 'components/profile-gate.js'],
@@ -159,7 +159,7 @@
   // The map library may be unavailable (not stored, device offline): the card shows all its data with a clear message instead
   const MAP_MISSING = 'تعذّر تحميل الخريطة — بيانات المحطة متاحة، ويمكن فتح الموقع في قوقل ماب';
   const NAV_NEEDS_MAP = 'الملاحة تحتاج الخريطة — افتح الموقع في قوقل ماب';
-  let card = null, nearby = null, outageMap = null, tools = null, current = null, noteTimer = 0;
+  let card = null, nearby = null, outageMap = null, cabinets = null, tools = null, current = null, noteTimer = 0;
   /* تنبيه قصير: على الخريطة إن وُجدت، وإلا في سطر الحالة — a short notice: on the map if any, else in the status line */
   function notify_(text) {
     if (view) { view.toast(text); return; }
@@ -224,10 +224,15 @@
       onEdit: function (s) { goToStation(s); global.setTimeout(function () { SecStationForm.openEdit(s); }, MORPH_SETTLE_MS); }
     });
     const blocked = function () { return SecNavView.isActive(); };
-    outageMap = SecOutageSearch.mountMap(view, { onStart: function () { tools.stop(); nearby.reset(); }, isBlocked: blocked,
+    // (19 نوفمبر، تصميم محمد) «كبائن التوزيع» بعد «مغذي» وقبل «أعطال»: رقم المحطة ← كبائنها بالتسلسل والمسافة و«انطلاق»
+    // «distribution cabinets» after «feeder» and before «outage»: a station number ← its cabinets, distance and «go»
+    cabinets = SecCabinetsTool.mountMap(view, { stations: function () { return SYNC.state().loaded ? SYNC.stations() : null; }, isBlocked: blocked,
+      onStart: function () { tools.stop(); outageMap.clear(); nearby.reset(); },
+      onNavigate: function (s) { return SecNavView.start(s); } });
+    outageMap = SecOutageSearch.mountMap(view, { onStart: function () { tools.stop(); nearby.reset(); cabinets.clear(); }, isBlocked: blocked,
       // (6 نوفمبر) ملاحة الأعطال بالترتيب: محطة بمحطة داخل الموقع — outage navigation in order, stop by stop in the site
       onNavigate: function (stops) { return SecNavView.start(stops[0], { stops: stops }); } });
-    tools = SecMapTools.mount(view, { onStart: function () { outageMap.clear(); nearby.reset(); }, isBlocked: blocked });
+    tools = SecMapTools.mount(view, { onStart: function () { outageMap.clear(); nearby.reset(); cabinets.clear(); }, isBlocked: blocked });
     SecNavView.init({
       getMap: function () { return view.map; }, stage: $('mapStage'), topArea: $('topContentArea'),
       relayout: layout, hint: view.hint, hideHint: view.hideHint, googleMapsUrl: SecStationCard.googleMapsUrl,
@@ -307,7 +312,7 @@
   }
   function showStation_(s) {
     if (!view) { showCard_(s); return; } // بلا خريطة: البطاقة وحدها مع الرسالة / no map: the card alone with the message
-    tools.stop(); outageMap.clear(); nearby.reset(); view.hideHint();
+    tools.stop(); outageMap.clear(); cabinets.clear(); nearby.reset(); view.hideHint();
     showCard_(s);
     layout();
     view.showStation(s);
@@ -318,7 +323,7 @@
     if (SecStationForm.isOpen()) SecStationForm.close();
     if (!current && doc.body.dataset.view === 'map') return;
     current = null;
-    if (view) { tools.stop(); outageMap.clear(); nearby.reset(); view.hideHint(); view.clearStation(); }
+    if (view) { tools.stop(); outageMap.clear(); cabinets.clear(); nearby.reset(); view.hideHint(); view.clearStation(); }
     if (card) { card.destroy(); card = null; }
     $('heroSection').classList.remove('station-framed');
     bar.clear();

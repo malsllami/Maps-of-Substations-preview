@@ -24,13 +24,14 @@
   const PAGE = 50, KM_MIN = 0.5, KM_MAX = 10, KM_STEP = 0.5;
   const GEO_OPTS = { enableHighAccuracy: true, timeout: 20000, maximumAge: 30000 };
   // (11 نوفمبر) «سكاكين»: صفوف التوزيع برقم سكينة (BS-150)؛ و«توزيع» بلا السكاكين — «switches»: distribution rows with a switch id
-  const TYPES = [{ v: '', t: 'الكل' }, { v: 'توزيع', t: 'توزيع' }, { v: 'تحويل', t: 'تحويل' }, { v: 'سكينة', t: 'سكاكين' }];
+  const TYPES = [{ v: '', t: 'الكل' }, { v: 'توزيع', t: 'توزيع' }, { v: 'تحويل', t: 'تحويل' }, { v: 'سكينة', t: 'سكاكين' }, { v: 'كبينة', t: 'كبائن' }];
   const TYPE_ICON = { // الرمزان المعتمدان — the approved symbols
     'توزيع': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="19" r="2.5"/><circle cx="19" cy="19" r="2.5"/><path d="M12 7.5v4M12 11.5l-5.5 5.2M12 11.5l5.5 5.2"/></svg>',
     'تحويل': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h14l-3.5-3.5M20 16H6l3.5 3.5"/></svg>',
-    'سكينة': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 17h3M19 17h3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M8.5 15.5 17 7"/></svg>' // (11 نوفمبر) السكينة الهوائية / the air-break switch
+    'سكينة': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 17h3M19 17h3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M8.5 15.5 17 7"/></svg>', // (11 نوفمبر) السكينة الهوائية / the air-break switch
+    'كبينة': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M12 3v18M9.5 11h.01M14.5 11h.01"/></svg>' // (19 نوفمبر) كبينة توزيع: صندوق بباب مزدوج / a distribution cabinet
   };
-  const KIND_OF_FILTER = { 'توزيع': 'dist', 'تحويل': 'sub', 'سكينة': 'switch' };
+  const KIND_OF_FILTER = { 'توزيع': 'dist', 'تحويل': 'sub', 'سكينة': 'switch', 'كبينة': 'cabinet' };
   const ICON = {
     locate: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5"/><line x1="12" y1="1" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="23"/><line x1="1" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="23" y2="12"/></svg>',
     filter: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.5 10 19 14 21 14 12.5 22 3"/></svg>',
