@@ -63,6 +63,9 @@
     const o = Object.assign({ variant: 'lens' }, opts || {});
     const lens = o.variant === 'lens';
     let busy = false, progressTimer = null, mode = 'station'; // station | cab | BS | LBS | abc
+    // (19 نوفمبر، ملاحظة محمد) رمز النوع مكتوبًا قبل الرقم: «C/» للكبينة و«BS-»/«LBS-» للسكينة، فيكتب العضو الأرقام فقط
+    // the kind's prefix written before the number: «C/» for a cabinet, «BS-»/«LBS-» for a switch — the member types digits only
+    const PREFIX_CHIP = '<bdi class="ssb-prefix" data-role="prefix" dir="ltr" hidden></bdi>';
     const PANEL = '<div class="ssb-panel" data-role="kinds" role="radiogroup" aria-label="نوع البحث">' +
       '<span class="ssb-head" data-head="station">' + KIND_SVG.dist + '<span>محطات توزيع</span></span>' +
       '<span class="ssb-head ssb-head-cab" data-head="cab">' + KIND_SVG.cab + '<span>كبائن</span></span>' + // (19 نوفمبر) الخيار 1 / option 1
@@ -73,10 +76,10 @@
       Q.SWITCH_PREFIXES.map(function (x) { return '<button type="button" class="ssb-mode ssb-sw" data-mode="' + x + '" role="radio" dir="ltr">' + x + '</button>'; }).join('') +
       '<button type="button" class="ssb-mode" data-mode="abc" role="radio" dir="ltr">' + KIND_SVG.kb + '<span>ABC</span></button></div>';
     container.innerHTML = PANEL + (lens
-      ? '<div class="search-lens" data-role="box">' + LENS_SVG + '<input data-role="input" placeholder="مثال: 39070 أو ABN" aria-label="رقم المحطة"' + NOFILL + '></div>' +
+      ? '<div class="search-lens" data-role="box">' + LENS_SVG + '<input data-role="input" placeholder="مثال: 39070 أو ABN" aria-label="رقم المحطة"' + NOFILL + '>' + PREFIX_CHIP + '</div>' +
         '<div class="search-hint" data-role="hint" role="status"></div><div class="search-progress" data-role="progress">' + PROGRESS + '</div>'
       : '<div class="search-and-back-row show"><div class="station-search-bar" data-role="box"><span class="ssb-icon" data-act="search" role="button" aria-label="بحث">' + BAR_SVG + '</span>' +
-        '<input data-role="input" placeholder="ابحث عن محطة أخرى..." aria-label="رقم المحطة"' + NOFILL + '>' +
+        '<input data-role="input" placeholder="ابحث عن محطة أخرى..." aria-label="رقم المحطة"' + NOFILL + '>' + PREFIX_CHIP +
         (o.onClose ? '<button type="button" class="ssb-close" data-act="close" title="إغلاق البحث والرجوع للوضع العادي" aria-label="إغلاق البحث">' + CLOSE_SVG + '</button>' : '') +
         (o.onTools ? '<button type="button" class="ssb-tools" data-act="tools" title="أدوات الخريطة: قريب، مغذي، أعطال، القياس" aria-label="أدوات الخريطة" aria-expanded="false">' + TOOLS_SVG + '</button>' : '') +
         '</div></div>' +
@@ -90,7 +93,7 @@
     // ===== نوع البحث ولوحة المفاتيح (11 نوفمبر): «محطة» بالأرقام افتراضيًا دائمًا (قرار محمد — لا يُحفظ اختيار) =====
     // The search kind and keyboard: «station» on the number pad by default, always (no choice is kept)
     const kinds = r('kinds'), basePlaceholder = input.placeholder;
-    const PLACEHOLDER = { abc: 'رمز محطة التحويل — مثال: ABN', sw: 'رقم السكينة فقط — مثال: 150', cab: 'رقم المحطة-التسلسل (39070-1) أو المحطة وحدها' };
+    const PLACEHOLDER = { abc: 'رمز محطة التحويل — مثال: ABN', sw: 'رقم السكينة فقط — مثال: 150', cab: 'المحطة-التسلسل: 39070-1' };
     function prefix_() { return mode === 'station' || mode === 'abc' || mode === 'cab' ? '' : mode; }
     /* اللوحة تظهر أثناء البحث فقط (التركيز، أو نص مكتوب، أو اختيار غير الافتراضي) — the panel shows while searching only */
     function showKinds_() { kinds.classList.toggle('show', doc.activeElement === input || input.value !== '' || mode !== 'station'); }
@@ -100,6 +103,10 @@
       kinds.querySelectorAll('.ssb-mode').forEach(function (b) { const on = b.dataset.mode === mode; b.classList.toggle('active', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); });
       kinds.querySelectorAll('.ssb-head').forEach(function (h) { h.classList.toggle('active', h.dataset.head === head); });
       input.placeholder = prefix_() ? PLACEHOLDER.sw : mode === 'abc' ? PLACEHOLDER.abc : mode === 'cab' ? PLACEHOLDER.cab : basePlaceholder;
+      const chip = r('prefix');
+      if (chip) { chip.textContent = mode === 'cab' ? 'C/' : prefix_() ? prefix_() + '-' : ''; chip.hidden = !chip.textContent; chip.className = 'ssb-prefix' + (mode === 'cab' ? ' is-cab' : ' is-sw'); }
+      // الرمز يسار الرقم: الكتابة من اليسار بجانبه «C/39070-1» — the prefix left of the number, typed from the left beside it
+      input.dir = chip && !chip.hidden ? 'ltr' : ''; input.classList.toggle('has-prefix', !!(chip && !chip.hidden));
       // الكبينة: لوحة الأرقام بالفاصلة العشرية (للفاصل بين المحطة والتسلسل) — the cabinet: the decimal pad (for the station/sequence separator)
       input.inputMode = mode === 'abc' ? 'text' : mode === 'cab' ? 'decimal' : 'numeric';
       if (prefix_()) input.value = input.value.replace(/[^0-9]/g, ''); // السكينة: الرقم فقط / a switch: the number only

@@ -397,3 +397,11 @@ body:not(.nav-full) .view-map .toolbar-btn[data-nearby].active,body:not(.nav-ful
 /* (19 نوفمبر، قرار محمد) شاشة «البيانات» = بطاقة البيانات المؤقتة وحدها (والتاريخ أعلاها)
    The data screen = the cached-data card alone (with the date above it) */
 .view-home .home-title,.view-home .search-wrap,.view-home #statsSlot,.view-home .action-tiles,.view-home #refreshNote,.view-home #homeOutage,.view-home #recentSlot{display:none !important;}
+
+/* (19 نوفمبر) رمز النوع قبل الرقم داخل مربع البحث — the kind's prefix before the number inside the search box */
+.ssb-prefix{flex:0 0 auto;display:inline-flex;align-items:center;padding:4px 8px;margin-inline-start:4px;border-radius:9px;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:15px;line-height:1;}
+.ssb-prefix[hidden]{display:none;}
+.ssb-prefix.is-cab{background:var(--c-cab-bg);color:var(--c-cab-fg);border:1px solid var(--c-cab-line);}
+.ssb-prefix.is-sw{background:var(--c-sw-bg);color:var(--c-sw-fg);border:1px solid var(--c-sw-line);}
+.has-prefix{text-align:left !important;direction:ltr;}
+.has-prefix::placeholder{text-align:left;}

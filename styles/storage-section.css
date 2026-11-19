@@ -84,3 +84,13 @@
 .su-title{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--text-primary);}
 .su-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .su-row.su-full{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 6px;border-radius:12px;background:var(--bg);border:1px solid var(--border);text-align:center;}
+
+/* (19 نوفمبر، ملاحظة محمد) خانتا كل نوع بلونه: خلفية النوع، والعدد والحجم بلون خطه — each kind's two cells in its color */
+.storage-kind.is-dist .sk-cell{background:var(--c-dist-bg);border-color:var(--c-dist-line);}
+.storage-kind.is-dist .sk-val{color:var(--c-dist-fg);}
+.storage-kind.is-switch .sk-cell{background:var(--c-sw-bg);border-color:var(--c-sw-line);}
+.storage-kind.is-switch .sk-val,.storage-kind.is-switch .sk-sub{color:var(--c-sw-fg);}
+.storage-kind.is-cabinet .sk-cell{background:var(--c-cab-bg);border-color:var(--c-cab-line);}
+.storage-kind.is-cabinet .sk-val{color:var(--c-cab-fg);}
+.storage-kind.is-sub .sk-cell{background:var(--c-sub-bg);border-color:var(--c-sub-line);}
+.storage-kind.is-sub .sk-val{color:var(--c-sub-fg);}

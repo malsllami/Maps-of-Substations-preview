@@ -16,5 +16,5 @@
 (function (global) {
   'use strict';
   global.SEC2_RELEASE = 6;
-  global.SEC2_BUILD = '20261119-164909';
+  global.SEC2_BUILD = '20261119-182719';
 })(typeof window !== 'undefined' ? window : globalThis);
