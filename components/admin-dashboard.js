@@ -68,9 +68,16 @@
   const CHEV = '<svg class="acc-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>';
 
   // ===== أدوات العرض — Display helpers =====
+  // أيقونة واتساب (19 نوفمبر) — the WhatsApp icon
+  const WA_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-2-1.2 7.4 7.4 0 0 1-1.4-1.7c-.1-.2 0-.4.1-.5l.4-.4.2-.4v-.4l-.8-1.9c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.3 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3z"/></svg>';
   function num_(v) { return typeof v === 'number' && isFinite(v) ? v : null; }
   /* (15 نوفمبر، تصميم محمد 1) صف «السكاكين الكهربائية» تحت البطاقات الثلاث: الإجمالي ثم BS | LBS؛ يغيب إذا لم يرسله الخادم
    * The «electrical switches» row under the three tiles: the total, then BS | LBS; hidden when the server doesn't send it */
+  /* (19 نوفمبر، طلب محمد) صف «كبائن التوزيع» تحت صف السكاكين؛ يغيب إذا لم يرسله الخادم — the cabinets row; hidden without the field */
+  function cabinetsRow_(d) {
+    if (num_(d.totalCabinets) === null) return '';
+    return '<div class="ops-pill ops-pill-cab" data-role="cabinets"><div class="ops-sw-head"><span class="ops-sw-mark">▣</span><span>كبائن التوزيع</span><b>' + show_(d.totalCabinets) + '</b></div></div>';
+  }
   function switchesRow_(d) {
     if (num_(d.totalSwitches) === null) return '';
     return '<div class="ops-pill ops-pill-sw" data-role="switches"><div class="ops-sw-head"><span class="ops-sw-mark">◆</span><span>السكاكين الكهربائية</span><b>' + show_(d.totalSwitches) + '</b></div>' +
@@ -244,7 +251,7 @@
               '<span class="ops-pill-split"><span class="ops-split-dist">● توزيع ' + show_(d.totalStationsDistribution) + '</span><span class="ops-split-sub">● تحويل ' + show_(d.totalStationsSubstations) + '</span></span></div>' +
             '<div class="ops-pill ops-pill-adds"><span class="ops-pill-icon">' + ICONS.plus + '</span><b>' + show_(d.additionsToday) + '</b><span>إضافات اليوم</span></div>' +
             '<div class="ops-pill ops-pill-edits"><span class="ops-pill-icon">' + ICONS.pencil + '</span><b>' + show_(d.editsToday) + '</b><span>تعديلات اليوم</span></div>' +
-          '</div>' + switchesRow_(d) + '</div>' +
+          '</div>' + switchesRow_(d) + cabinetsRow_(d) + '</div>' +
         updateCard_(d.updateProgress) +
         // طلبات اليوم وعمليات الخصائص وأكثر 5 كما هي (قرار محمد) — today's requests, property operations and top 5 as they were
         '<div class="ops-status-card" data-role="quota"><div class="ops-status-ring">' + ring_(quota, 'quota', 84) + '</div><div class="ops-status-info">' +
@@ -568,6 +575,13 @@
     }
     /* القائمة بترتيب الخادم العكسي (آخر من سجّل أولًا)، مصفّاة بالاسم أو الجوال (الأرقام العربية تُقبل)
      * The list in the server's reverse order (latest registration first), filtered by name or phone (Arabic digits accepted) */
+    /* (19 نوفمبر، طلب محمد) الضغط على الجوال يتصل بالعضو، وزر واتساب بجانبه يفتح محادثته — tapping the phone calls; a WhatsApp button beside it */
+    function phoneCell_(phone) {
+      const digits = String(phone || '').replace(/D/g, '');
+      if (!digits) return esc(phone || '—');
+      return '<a class="mem-call" href="tel:+' + digits + '" title="اتصال بالعضو">' + esc(phone) + '</a>' +
+        '<a class="mem-wa" href="https://wa.me/' + digits + '" target="_blank" rel="noopener" title="مراسلة عبر واتساب" aria-label="مراسلة عبر واتساب">' + WA_SVG + '</a>';
+    }
     function renderMembers_() {
       if (!members) return;
       const raw = membersCard.querySelector('[data-role="members-search"]').value.trim();
@@ -576,7 +590,7 @@
       membersCard.querySelector('[data-role="members-count"]').textContent = '(' + (q ? list.length + ' من ' : '') + members.length + ')';
       membersCard.querySelector('[data-role="members-body"]').innerHTML = list.length ? table_(['ترتيب التسجيل', 'الاسم', 'الجوال', 'النوع', 'الوردية', 'القسم', 'الحالة', 'تاريخ التسجيل'], list.map(function (m) {
         const at = riyadhStamp(m.registeredAt);
-        return '<tr><td class="mono">' + (members.length - members.indexOf(m)) + '</td><td>' + esc(m.name) + '</td><td class="mono" dir="ltr">' + esc(m.phone) + '</td><td>' + esc(m.memberType || '—') + '</td><td>' + esc(m.shift || '—') + '</td><td>' + esc(m.department || '—') + '</td><td>' + esc(m.status || '—') + '</td><td>' + (at ? dateCell(at) : esc(m.registeredAt || '—')) + '</td></tr>';
+        return '<tr><td class="mono">' + (members.length - members.indexOf(m)) + '</td><td>' + esc(m.name) + '</td><td class="mono mem-phone" dir="ltr">' + phoneCell_(m.phone) + '</td><td>' + esc(m.memberType || '—') + '</td><td>' + esc(m.shift || '—') + '</td><td>' + esc(m.department || '—') + '</td><td>' + esc(m.status || '—') + '</td><td>' + (at ? dateCell(at) : esc(m.registeredAt || '—')) + '</td></tr>';
       }).join('')) : '<div class="coming-soon">لا يوجد عضو يطابق البحث</div>';
     }
     function onInput_(e) { if (e.target.matches('[data-role="members-search"]')) renderMembers_(); }

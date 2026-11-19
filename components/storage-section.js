@@ -49,7 +49,10 @@
     NOT_LOADED: 'بيانات المحطات لم تُحمَّل بعد',
     IN_MEMORY: 'بيانات المحطات بالذاكرة فقط، لم تُحفظ بالجهاز',
     LATEST: 'آخر مزامنة: ',
-    VERSION: ' · النسخة '
+    VERSION: ' · النسخة ',
+    // (19 نوفمبر، ترتيب محمد) — Mohammed's order
+    REFRESH: 'تحديث',
+    GREGORIAN: 'التاريخ الميلادي', TIME: 'الوقت', VERSION_NO: 'رقم النسخة'
   };
 
   // أيقونات خطية بسيطة — simple line icons
@@ -61,8 +64,11 @@
     clock: SVG('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
     calendar: SVG('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>')
   };
-  // الخانات الأربع: [الدور، الأيقونة، العنوان] — the four cells
-  const CELLS = [['size', 'file', MSG.SIZE], ['count', 'db', MSG.COUNT], ['updated', 'clock', MSG.UPDATED], ['hijri', 'calendar', MSG.HIJRI]];
+  // (19 نوفمبر، ترتيب محمد) صف لكل نوع: حجم بياناته | عدده — a row per kind: its data size | its count
+  const KINDS = [['dist', 'حجم بيانات المحطات', 'عدد محطات التوزيع المحفوظة'], ['switch', 'حجم بيانات السكاكين', 'عدد السكاكين الهوائية'],
+    ['cabinet', 'حجم بيانات كبائن التوزيع', 'عدد كبائن التوزيع'], ['sub', 'حجم بيانات محطات التحويل', 'عدد محطات التحويل']];
+  /* الحجم: كيلوبايت تحت الميغا — the size: kilobytes under a megabyte */
+  function size_(bytes) { return bytes < 1024 * 1024 ? Math.max(bytes > 0 ? 1 : 0, Math.round(bytes / 1024)) + ' KB' : mb_(bytes) + ' MB'; }
 
   function mb_(bytes) { return (bytes / (1024 * 1024)).toFixed(2); }
   function gb_(bytes) { return bytes >= 1024 * 1024 * 1024 ? (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB' : Math.round(bytes / (1024 * 1024)) + ' MB'; }
@@ -107,16 +113,24 @@
 
   function html_() {
     return '<div class="storage-row" data-role="storage-row">' +
-      '<div class="storage-head"><div class="storage-title"><span class="storage-title-icon">' + ICONS.db + '</span>' + MSG.TITLE + '</div>' +
-        '<button type="button" class="storage-clear-btn" data-act="clear"><span class="storage-clear-icon">' + ICONS.trash + '</span>' + MSG.CLEAR + '</button></div>' +
+      '<div class="storage-head"><div class="storage-title"><span class="storage-title-icon">' + ICONS.db + '</span>' + MSG.TITLE + '</div></div>' +
+      '<div class="storage-sync" data-role="sync"></div>' + // حالة النسخة: محدّثة أو نسخة جديدة / the copy status
+      '<div class="storage-actions"><button type="button" class="storage-clear-btn" data-act="clear"><span class="storage-clear-icon">' + ICONS.trash + '</span>' + MSG.CLEAR + '</button>' +
+        '<button type="button" class="storage-refresh-btn" data-act="refresh">⟳ ' + MSG.REFRESH + '</button></div>' +
       '<div class="storage-usage"><div class="storage-usage-top"><span>' + MSG.USED + '</span><bdi class="storage-usage-val" data-role="usage">—</bdi></div>' +
         '<div class="storage-bar-wrap"><div class="storage-bar-track"><div class="storage-bar-fill" data-role="fill"></div></div><bdi class="storage-percent" data-role="percent">—</bdi></div>' +
         '<div class="storage-usage-note" data-role="usage-note" hidden>' + MSG.USED_NOTE + '</div></div>' +
-      '<div class="storage-cells">' + CELLS.map(function (c) {
-        return '<div class="storage-cell"><span class="storage-cell-icon">' + ICONS[c[1]] + '</span><span class="storage-cell-label">' + c[2] + '</span><span class="storage-cell-val" data-role="' + c[0] + '">—</span></div>';
+      '<div class="storage-kinds">' + KINDS.map(function (k) {
+        return '<div class="storage-kind is-' + k[0] + '"><div class="sk-cell"><span class="sk-label">' + k[1] + '</span><bdi class="sk-val" data-role="size-' + k[0] + '">—</bdi></div>' +
+          '<div class="sk-cell"><span class="sk-label">' + k[2] + '</span><bdi class="sk-val" data-role="count-' + k[0] + '">—</bdi>' +
+          (k[0] === 'switch' ? '<small class="sk-sub" data-role="switch-split"></small>' : '') + '</div></div>';
       }).join('') + '</div>' +
-      '<div class="stations-cache-info" data-role="info" hidden></div>' +
-      '<div class="stations-cache-info stations-latest-info" data-role="latest" hidden></div></div>';
+      '<div class="storage-updated"><div class="su-title">' + ICONS.clock + MSG.UPDATED + '</div>' +
+        '<div class="su-row su-full"><span class="sk-label">' + MSG.GREGORIAN + '</span><bdi class="sk-val" data-role="greg">—</bdi></div>' +
+        '<div class="su-row"><div class="sk-cell"><span class="sk-label">' + MSG.HIJRI + '</span><bdi class="sk-val" data-role="hijri">—</bdi><small class="sk-sub" data-role="age"></small></div>' +
+          '<div class="sk-cell"><span class="sk-label">' + MSG.TIME + '</span><bdi class="sk-val" data-role="time">—</bdi></div></div>' +
+        '<div class="su-row su-full"><span class="sk-label">' + MSG.VERSION_NO + '</span><bdi class="sk-val mono" data-role="version">—</bdi></div></div>' +
+      '<div class="stations-cache-info" data-role="info" hidden></div></div>';
   }
 
   /**
@@ -128,45 +142,47 @@
     container.insertAdjacentHTML('beforeend', html_());
     const row = container.querySelector('[data-role="storage-row"]');
     const fill = row.querySelector('[data-role="fill"]'), usage = row.querySelector('[data-role="usage"]'), percentEl = row.querySelector('[data-role="percent"]');
-    const info = row.querySelector('[data-role="info"]'), latest = row.querySelector('[data-role="latest"]');
+    const info = row.querySelector('[data-role="info"]');
+    // (19 نوفمبر) سطر حالة النسخة داخل البطاقة (محدّثة / نسخة جديدة) — the copy-status line inside the card
+    if (o.syncLine) row.querySelector('[data-role="sync"]').appendChild(o.syncLine);
     const cell = function (role) { return row.querySelector('[data-role="' + role + '"]'); };
     let alive = true, seq = 0, unsub = null, lastAt = null;
-
-    /* قيمة خانة: سطر رئيسي وسطر فرعي اختياري — A cell value: a main line and an optional sub line */
-    function setCell_(role, main, sub) {
-      const el = cell(role);
-      el.textContent = '';
-      const a = global.document.createElement('bdi'); a.textContent = main; el.appendChild(a);
-      if (sub) { const b = global.document.createElement('small'); b.textContent = sub; el.appendChild(b); }
-    }
     /* الهجري و«منذ …» (تتجدد كل 30 ث) — the Hijri date and «since …» (refreshed every 30 s) */
     function paintAge_() {
       if (!lastAt) return;
-      setCell_('hijri', D.hijri(lastAt), '(' + D.relativeTime(lastAt).replace(/^قبل /, 'منذ ') + ')');
+      const age = cell('age'); if (age) age.textContent = '(' + D.relativeTime(lastAt).replace(/^قبل /, 'منذ ') + ')';
     }
+    function set_(role, text) { const el = cell(role); if (el) el.textContent = text; }
 
     function renderStations_() {
       const s = SYNC ? SYNC.state() : { loaded: false };
       lastAt = null;
-      CELLS.forEach(function (c) { cell(c[0]).textContent = '—'; });
-      if (!s.loaded || !s.count) { info.textContent = MSG.NOT_LOADED; info.hidden = false; latest.hidden = true; return; }
-      setCell_('count', String(s.count));
-      if (s.persisted) { setCell_('size', mb_(s.sizeBytes || 0) + ' MB'); info.textContent = ''; info.hidden = true; }
-      else { info.textContent = MSG.IN_MEMORY; info.hidden = false; }
+      ['greg', 'hijri', 'age', 'time', 'version', 'switch-split'].concat(KINDS.map(function (k) { return 'size-' + k[0]; }), KINDS.map(function (k) { return 'count-' + k[0]; })).forEach(function (r) { set_(r, r === 'age' || r === 'switch-split' ? '' : '—'); });
+      if (!s.loaded || !s.count) { info.textContent = MSG.NOT_LOADED; info.hidden = false; return; }
+      // كل نوع: عدده وحجمه (نصيبه من حجم النسخة المحفوظة بنسبة بياناته) — each kind: its count and size (its share of the saved copy)
+      const Q = global.SecStationQuery, list = SYNC.stations ? SYNC.stations() : [], count = {}, bytes = {}, split = { BS: 0, LBS: 0 };
+      let all = 0;
+      KINDS.forEach(function (k) { count[k[0]] = 0; bytes[k[0]] = 0; });
+      list.forEach(function (st) {
+        const k = Q ? Q.kindOf(st) : (st.type === 'تحويل' ? 'sub' : 'dist'), b = JSON.stringify([st.id, st.type, st.feeder, st.region, st.lat, st.lng]).length;
+        count[k] = (count[k] || 0) + 1; bytes[k] = (bytes[k] || 0) + b; all += b;
+        if (k === 'switch') { const p = Q.switchParts(st.id); if (p && split[p.prefix] != null) split[p.prefix]++; }
+      });
+      const total = s.persisted ? (s.sizeBytes || 0) : 0;
+      KINDS.forEach(function (k) {
+        set_('count-' + k[0], String(count[k[0]] || 0));
+        set_('size-' + k[0], total && all ? size_(total * bytes[k[0]] / all) : '—');
+      });
+      set_('switch-split', 'عادية BS ' + split.BS + ' | سمارت LBS ' + split.LBS);
+      if (s.persisted) { info.textContent = ''; info.hidden = true; } else { info.textContent = MSG.IN_MEMORY; info.hidden = false; }
       const at = s.syncedAt || savedAt_();
-      if (!at) { latest.hidden = true; return; }
+      if (s.version != null) set_('version', String(s.version));
+      if (!at) return;
       lastAt = new Date(at);
-      setCell_('updated', D.time(lastAt), lastAt.toLocaleDateString(GREGORY_NUMERIC, { day: 'numeric', month: 'numeric', year: 'numeric' }) + ' م');
+      set_('greg', lastAt.toLocaleDateString(GREGORY_NUMERIC, { day: 'numeric', month: 'long', year: 'numeric' }) + ' م');
+      set_('hijri', D.hijri(lastAt));
+      set_('time', D.time(lastAt));
       paintAge_();
-      latest.textContent = MSG.LATEST;
-      const when = global.document.createElement('bdi'); when.textContent = D.dualDateTime(at);
-      latest.appendChild(when);
-      if (s.version != null) {
-        latest.appendChild(global.document.createTextNode(MSG.VERSION));
-        const v = global.document.createElement('b'), vb = global.document.createElement('bdi');
-        vb.textContent = String(s.version); v.appendChild(vb); latest.appendChild(v);
-      }
-      latest.hidden = false;
     }
     async function render() {
       const my = ++seq;
@@ -189,7 +205,10 @@
       if (o.onCleared) { try { o.onCleared(); } catch (e) { /* لا شيء / nothing */ } }
       return true;
     }
-    function onClick_(e) { if (e.target.closest('[data-act="clear"]')) clear(); }
+    function onClick_(e) {
+      if (e.target.closest('[data-act="clear"]')) clear();
+      else if (e.target.closest('[data-act="refresh"]') && o.onRefresh) o.onRefresh(); // (19 نوفمبر) تحديث النسخة / update the copy
+    }
 
     row.addEventListener('click', onClick_);
     const ageTimer = global.setInterval(paintAge_, AGE_REFRESH_MS);

@@ -80,6 +80,11 @@ body.admin-page header{position:sticky;top:0;z-index:20;}
 .ops-pill-sw .ops-sw-split span{font-size:12px;font-weight:700;color:var(--text-primary);}
 .ops-pill-sw .ops-sw-split b{display:inline;font-size:16px;color:var(--c-sw-fg);margin-inline-start:4px;}
 .ops-pill-sw .ops-sw-split i{width:1px;height:18px;background:var(--c-sw-line);}
+/* (19 نوفمبر) صف كبائن التوزيع بنفسجي — the cabinets row, purple */
+.ops-pill-cab{margin-top:10px;border-color:var(--c-cab-line);background:var(--c-cab-bg);gap:6px;}
+.ops-pill-cab .ops-sw-head{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;}
+.ops-pill-cab .ops-sw-head span{font-size:13.5px;font-weight:700;color:var(--c-cab-fg);}
+.ops-pill-cab .ops-sw-head b{display:inline;font-size:21px;color:var(--c-cab-fg);}
 /* البطاقات الظاهرة — the visible cards */
 .ops-card{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px;min-width:0;}
 .ops-card-title{font-size:13.5px;font-weight:700;margin-bottom:10px;}
@@ -223,3 +228,9 @@ body.admin-page header{position:sticky;top:0;z-index:20;}
 .upd-cells span{font-size:12px;color:var(--text-secondary);font-weight:700;}
 .upd-cells b{font-size:14px;color:var(--text-primary);}
 .upd-note{margin-top:10px;font-size:12px;color:var(--text-secondary);line-height:1.7;}
+
+/* (19 نوفمبر) جوال العضو: اتصال بالضغط وزر واتساب — the member phone: tap to call, a WhatsApp button */
+.mem-phone{white-space:nowrap;}
+.mem-call{color:inherit;text-decoration:underline dotted;text-underline-offset:3px;}
+.mem-wa{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;margin-inline-start:6px;border-radius:50%;background:#25D366;color:#fff;vertical-align:middle;}
+.mem-wa:active{opacity:.75;}

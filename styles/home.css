@@ -372,7 +372,7 @@ body:not(.nav-full) .view-map .toolbar-btn[data-nearby].active,body:not(.nav-ful
 
 /* لوحة نوع البحث (11 نوفمبر، تصميم محمد): صفّان بأعمدة متساوية — العناوين تشرح الاختيار وتتلوّن معه، وتظهر أثناء البحث فقط
    The search kind panel: two rows of equal columns — headings explain the choice and light with it; while searching only */
-.ssb-panel{display:none;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0 0 8px;padding:8px;border-radius:18px;
+.ssb-panel{display:none;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:0 0 8px;padding:8px;border-radius:18px;
   background:var(--glass-strong);border:1px solid var(--glass-line);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);}
 .ssb-panel.show{display:grid;}
 .ssb-head{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;height:34px;padding:0 4px;border-radius:12px;border:1px solid var(--glass-line);
@@ -389,3 +389,11 @@ body:not(.nav-full) .view-map .toolbar-btn[data-nearby].active,body:not(.nav-ful
 .ssb-mode svg{flex-shrink:0;}
 .ssb-mode.active{background:var(--teal);border-color:var(--teal);color:#fff;}
 .ssb-mode.ssb-sw.active{background:var(--sw);border-color:var(--sw);}
+/* (19 نوفمبر) الكبائن بنفسجي — cabinets purple */
+.ssb-head-cab.active{background:var(--cab);border-color:var(--cab);color:#fff;}
+.ssb-mode.ssb-cab{font-family:'JetBrains Mono',monospace;font-weight:800;}
+.ssb-mode.ssb-cab.active{background:var(--cab);border-color:var(--cab);color:#fff;}
+
+/* (19 نوفمبر، قرار محمد) شاشة «البيانات» = بطاقة البيانات المؤقتة وحدها (والتاريخ أعلاها)
+   The data screen = the cached-data card alone (with the date above it) */
+.view-home .home-title,.view-home .search-wrap,.view-home #statsSlot,.view-home .action-tiles,.view-home #refreshNote,.view-home #homeOutage,.view-home #recentSlot{display:none !important;}

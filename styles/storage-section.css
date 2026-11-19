@@ -60,3 +60,27 @@
   .storage-cells{grid-template-columns:repeat(2, minmax(0,1fr));row-gap:12px;}
   .storage-cell:nth-child(3){border-right:none;}
 }
+
+/* (19 نوفمبر، ترتيب محمد) بطاقة البيانات المؤقتة الواحدة: الحالة، ثم «مسح | تحديث»، ثم المساحة، ثم صف لكل نوع (حجمه | عدده)،
+   ثم آخر تحديث: الميلادي سطرًا كاملًا، والهجري | الوقت، ورقم النسخة — كل قيمة داخل إطار البطاقة
+   The single cached-data card in Mohammed's order; every value stays inside the card frame */
+.storage-sync .sync-line{margin:0 0 4px;}
+.storage-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.storage-actions .storage-clear-btn,.storage-refresh-btn{width:100%;justify-content:center;min-height:42px;border-radius:12px;font-family:inherit;font-weight:700;}
+.storage-refresh-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;font-size:13.5px;cursor:pointer;
+  background:var(--c-dist-bg);color:var(--c-dist-fg);border:1.5px solid var(--c-dist-line);}
+.storage-kinds{display:flex;flex-direction:column;gap:8px;}
+.storage-kind{display:grid;grid-template-columns:1fr 1fr;gap:8px;border-inline-start:5px solid var(--teal);border-radius:12px;padding:2px 0 2px 0;}
+.storage-kind.is-switch{border-inline-start-color:var(--sw);}
+.storage-kind.is-cabinet{border-inline-start-color:var(--cab);}
+.storage-kind.is-sub{border-inline-start-color:var(--blue-mid);}
+.sk-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:0;padding:8px 6px;border-radius:12px;
+  background:var(--bg);border:1px solid var(--border);text-align:center;}
+.sk-label{font-size:11.5px;color:var(--text-secondary);font-weight:600;line-height:1.4;}
+.sk-val{font-size:15px;font-weight:800;color:var(--text-primary);overflow-wrap:anywhere;}
+.sk-val.mono{font-family:'JetBrains Mono',monospace;}
+.sk-sub{font-size:11.5px;color:var(--text-secondary);font-weight:700;}
+.storage-updated{display:flex;flex-direction:column;gap:8px;}
+.su-title{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--text-primary);}
+.su-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.su-row.su-full{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 6px;border-radius:12px;background:var(--bg);border:1px solid var(--border);text-align:center;}

@@ -37,6 +37,7 @@
   // أيقونات لوحة النوع (11 نوفمبر) — the kind panel icons
   const KIND_SVG = {
     dist: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="19" r="2.5"/><circle cx="19" cy="19" r="2.5"/><path d="M12 7.5v4M12 11.5l-5.5 5.2M12 11.5l5.5 5.2"/></svg>',
+    cab: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M12 3v18"/></svg>', // (19 نوفمبر) كبينة / a cabinet
     sw: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 17h3M19 17h3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M8.5 15.5 17 7"/></svg>',
     sub: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h14l-3.5-3.5M20 16H6l3.5 3.5"/></svg>',
     pin: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>',
@@ -61,12 +62,14 @@
   function mount(container, opts) {
     const o = Object.assign({ variant: 'lens' }, opts || {});
     const lens = o.variant === 'lens';
-    let busy = false, progressTimer = null, mode = 'station'; // station | BS | LBS | abc
+    let busy = false, progressTimer = null, mode = 'station'; // station | cab | BS | LBS | abc
     const PANEL = '<div class="ssb-panel" data-role="kinds" role="radiogroup" aria-label="نوع البحث">' +
       '<span class="ssb-head" data-head="station">' + KIND_SVG.dist + '<span>محطات توزيع</span></span>' +
+      '<span class="ssb-head ssb-head-cab" data-head="cab">' + KIND_SVG.cab + '<span>كبائن</span></span>' + // (19 نوفمبر) الخيار 1 / option 1
       '<span class="ssb-head ssb-head-sw" data-head="sw">' + KIND_SVG.sw + '<span>سكينة هوائية</span></span>' +
       '<span class="ssb-head" data-head="abc">' + KIND_SVG.sub + '<span>محطات تحويل</span></span>' +
       '<button type="button" class="ssb-mode" data-mode="station" role="radio">' + KIND_SVG.pin + '<span>محطة</span></button>' +
+      '<button type="button" class="ssb-mode ssb-cab" data-mode="cab" role="radio" dir="ltr">C</button>' +
       Q.SWITCH_PREFIXES.map(function (x) { return '<button type="button" class="ssb-mode ssb-sw" data-mode="' + x + '" role="radio" dir="ltr">' + x + '</button>'; }).join('') +
       '<button type="button" class="ssb-mode" data-mode="abc" role="radio" dir="ltr">' + KIND_SVG.kb + '<span>ABC</span></button></div>';
     container.innerHTML = PANEL + (lens
@@ -87,8 +90,8 @@
     // ===== نوع البحث ولوحة المفاتيح (11 نوفمبر): «محطة» بالأرقام افتراضيًا دائمًا (قرار محمد — لا يُحفظ اختيار) =====
     // The search kind and keyboard: «station» on the number pad by default, always (no choice is kept)
     const kinds = r('kinds'), basePlaceholder = input.placeholder;
-    const PLACEHOLDER = { abc: 'رمز محطة التحويل — مثال: ABN', sw: 'رقم السكينة فقط — مثال: 150' };
-    function prefix_() { return mode === 'station' || mode === 'abc' ? '' : mode; }
+    const PLACEHOLDER = { abc: 'رمز محطة التحويل — مثال: ABN', sw: 'رقم السكينة فقط — مثال: 150', cab: 'رقم المحطة-التسلسل (39070-1) أو المحطة وحدها' };
+    function prefix_() { return mode === 'station' || mode === 'abc' || mode === 'cab' ? '' : mode; }
     /* اللوحة تظهر أثناء البحث فقط (التركيز، أو نص مكتوب، أو اختيار غير الافتراضي) — the panel shows while searching only */
     function showKinds_() { kinds.classList.toggle('show', doc.activeElement === input || input.value !== '' || mode !== 'station'); }
     function setKind_(m) {
@@ -96,8 +99,9 @@
       const head = prefix_() ? 'sw' : mode;
       kinds.querySelectorAll('.ssb-mode').forEach(function (b) { const on = b.dataset.mode === mode; b.classList.toggle('active', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); });
       kinds.querySelectorAll('.ssb-head').forEach(function (h) { h.classList.toggle('active', h.dataset.head === head); });
-      input.placeholder = prefix_() ? PLACEHOLDER.sw : mode === 'abc' ? PLACEHOLDER.abc : basePlaceholder;
-      input.inputMode = mode === 'abc' ? 'text' : 'numeric';
+      input.placeholder = prefix_() ? PLACEHOLDER.sw : mode === 'abc' ? PLACEHOLDER.abc : mode === 'cab' ? PLACEHOLDER.cab : basePlaceholder;
+      // الكبينة: لوحة الأرقام بالفاصلة العشرية (للفاصل بين المحطة والتسلسل) — the cabinet: the decimal pad (for the station/sequence separator)
+      input.inputMode = mode === 'abc' ? 'text' : mode === 'cab' ? 'decimal' : 'numeric';
       if (prefix_()) input.value = input.value.replace(/[^0-9]/g, ''); // السكينة: الرقم فقط / a switch: the number only
       setHint_('');
       if (doc.activeElement === input) { input.blur(); input.focus(); } // الآيفون يبدّل اللوحة بإعادة التركيز / the iPhone swaps the pad on refocus
@@ -106,7 +110,11 @@
     kinds.addEventListener('pointerdown', function (e) { e.preventDefault(); }); // لا يُغلق لوحة المفاتيح / keeps the keyboard open
     input.addEventListener('focus', showKinds_);
     input.addEventListener('blur', function () { global.setTimeout(showKinds_, 0); });
-    input.addEventListener('input', function () { if (prefix_()) { const d = input.value.replace(/[^0-9]/g, ''); if (d !== input.value) input.value = d; } });
+    input.addEventListener('input', function () {
+      if (prefix_()) { const d = input.value.replace(/[^0-9]/g, ''); if (d !== input.value) input.value = d; }
+      // الكبينة: أرقام وفاصل واحد يُعرض «-» — the cabinet: digits and one separator shown as «-»
+      if (mode === 'cab') { let v = TI.normalizeDigits(input.value).replace(/[.,\s\/‐-―−_]+/g, '-').replace(/[^0-9-]/g, '').replace(/^-+/, ''); const i = v.indexOf('-'); if (i !== -1) v = v.slice(0, i + 1) + v.slice(i + 1).replace(/-/g, ''); if (v !== input.value) input.value = v; }
+    });
 
     function setHint_(text, err) { hint.className = hintCls + (err ? ' err' : ''); hint.textContent = text || ''; }
     setKind_('station');
@@ -155,6 +163,14 @@
       // رمز مختار ← «الرمز-الرقم» بالأرقام فقط؛ وإلا ما كُتب (والسكينة المكتوبة يدويًا تُوحَّد) — a chosen prefix ← «prefix-number»
       const prefix = text === undefined ? prefix_() : '';
       const digits = prefix ? typed.replace(/[^0-9]/g, '') : '';
+      // (19 نوفمبر) الكبينة: «39070-1» ← C/39070-1، ورقم المحطة وحده ← كبائنها في أداة «كبائن التوزيع»
+      // the cabinet: «39070-1» ← C/39070-1; the station alone ← its cabinets in the cabinets tool
+      if (text === undefined && mode === 'cab') {
+        const m = /^([0-9]+)(?:-([0-9]+))?$/.exec(typed);
+        if (!m) return null;
+        if (!m[2]) { if (o.onCabinets) { o.onCabinets(m[1]); return { cabinets: m[1] }; } return null; }
+        return search(Q.cabinetId(m[1], m[2]));
+      }
       const raw = prefix ? (digits ? Q.switchId(prefix, digits) : '') : Q.canonicalId(typed);
       if (!raw) return null;
       const loggedIn = o.isLoggedIn ? o.isLoggedIn() : !!(global.SecSession && global.SecSession.isLoggedIn());

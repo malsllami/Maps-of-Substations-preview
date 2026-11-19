@@ -349,6 +349,8 @@
   // حقل ظاهر دائمًا بدل العدسة الدائرية (ملاحظة محمد 19 أكتوبر) — an always-visible field instead of the round lens
   const lens = SecStationSearchBox.mount($('lensBox'), { variant: 'bar', placeholder: 'اكتب رقم المحطة أو رمزها', isLoggedIn: loggedIn, onFound: goToStation, onAdd: function (q) { SecStationForm.openAdd(q); }, onUpdated: onUpdated_ });
   const bar = SecStationSearchBox.mount($('barBox'), { variant: 'bar', isLoggedIn: loggedIn, onFound: goToStation, onAdd: function (q) { SecStationForm.openAdd(q); }, onUpdated: onUpdated_,
+    // (19 نوفمبر) «C» برقم المحطة وحده ← كبائنها في أداة «كبائن التوزيع» / «C» with the station alone ← its cabinets in the tool
+    onCabinets: function (st) { if (cabinets) cabinets.show(st); },
     onFocus: function () { enterSearchMode_(); }, onClose: function () { closeSearchMode_(); },
     onTools: function () { if (!view) return false; const on = view.toggleTools(); setPref_(KEYS.MAP_TOOLS_FOLDED, !on); return on; } }); // أدوات الخريطة من مربع البحث (النموذج) / the map tools from the search box
   // بطاقة «بحث عن حالة عطل» في صف الإجراءات تفتح لوحة الأرقام تحته (تصميم محمد، 15 أكتوبر) / the outage tile opens the panel below it
@@ -385,9 +387,13 @@
 
   // ===== البطاقات السفلية — The lower cards =====
   // الإحصاءات للعضو فقط (الزائر لا يرى البطاقات ولا يُرسل طلبًا) / stats for members only (a guest sends no request)
-  const stats = loggedIn() ? SecStatsCards.mount($('statsSlot')) : { refresh: function () { return Promise.resolve(false); }, refreshIfStale: function () {} };
+  // (19 نوفمبر، قرار محمد) شاشة «البيانات» = بطاقة البيانات المؤقتة وحدها: لا بحث ولا بطاقات إحصاءات ولا إجراءات، فلا طلب getStats منها
+  // the data screen = the cached-data card alone: no search, stats or action tiles, so no getStats request from it
+  const stats = { refresh: function () { return Promise.resolve(false); }, refreshIfStale: function () {} };
   const recent = SecRecentStations.mount($('recentSlot'), { onSelect: goToStation });
-  SecStorageSection.mount($('storageSlot'), { onCleared: function () { status.refreshOffline(); } });
+  SecStorageSection.mount($('storageSlot'), { onCleared: function () { status.refreshOffline(); },
+    // (19 نوفمبر) سطر الحالة داخل البطاقة، وزر «تحديث» يحدّث نسخة المحطات كزر الشريط — the status line inside the card; «refresh» syncs the copy
+    syncLine: $('storageSyncLine'), onRefresh: function () { if (header.refreshButton) header.refreshButton.click(); } });
   // لوحة واحدة مفتوحة في كل مرة: الأعطال أو آخر المحطات / one panel open at a time: outage or recent
   $('recentToggleBtn').addEventListener('click', function () { outage.toggle(false); $('recentToggleBtn').setAttribute('aria-expanded', recent.toggle() ? 'true' : 'false'); });
   $('outageTileBtn').addEventListener('click', function () { $('recentToggleBtn').setAttribute('aria-expanded', 'false'); });
