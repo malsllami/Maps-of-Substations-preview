@@ -111,9 +111,9 @@
   /* meta (اختياري): { action, failKind, outcome, file } — تُكمَّل ببيانات الجهاز والصفحة والعضو لأعمدة السجل المنفصلة
      meta (optional): completed with device, page and member data for the separate log columns */
   function queueError_(source, message, details, meta) {
-    const queue = readQueue_(), person = personMeta_();
+    const queue = readQueue_(), person = personMeta_(), id = newErrorId_();
     queue.push({
-      id: newErrorId_(),
+      id: id,
       source: source,
       message: String(message).slice(0, 180),
       details: ('وقت الحدوث: ' + clock_() + ' | الصفحة: ' + pageName_() + ' | ' + details + ' | الجهاز: ' + deviceSummary_() +
@@ -121,6 +121,43 @@
       meta: Object.assign(deviceMeta_(), { page: pageName_(), phone: person.phone, deviceId: person.deviceId }, meta || {})
     });
     writeQueue_(queue);
+    return id; // (21 نوفمبر) رقم الحادثة لإكمال صفها لاحقًا / the incident id, to complete its row later
+  }
+
+  /* ===== (21 نوفمبر، طلب محمد) الحوادث المفتوحة: صف أحمر بوقت الانقطاع، ثم يُكمَل بوقت العودة ومدته — Open incidents =====
+   * kind: 'server' (الخادم لا يرد) | 'final' (طلب فشل نهائيًا). تُحفظ في الجهاز، فإن أُغلق التطبيق قبل العودة تُكمَل عند أول رد
+   * سليم بعد إعادة فتحه، مع ذكر ذلك في النتيجة.
+   * kind: the server not answering | a request finally failed. Kept on the device; if the app closes before the return,
+   * completed at the first healthy reply after reopening, saying so in the outcome. */
+  const INCIDENTS_KEY = CONFIG.STORAGE_KEYS.OPEN_INCIDENTS;
+  const PAGE_RUN = newErrorId_(); // هذا الفتح للصفحة / this page open
+  function readIncidents_() {
+    try { const v = JSON.parse(localStorage.getItem(INCIDENTS_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; }
+  }
+  function writeIncidents_(list) {
+    try { if (list.length) localStorage.setItem(INCIDENTS_KEY, JSON.stringify(list.slice(-10))); else localStorage.removeItem(INCIDENTS_KEY); } catch (e) { /* محظور / blocked */ }
+  }
+  function openIncident_(id, kind, brokeAt) {
+    const list = readIncidents_();
+    list.push({ id: id, kind: kind, brokeAt: brokeAt, run: PAGE_RUN });
+    writeIncidents_(list);
+  }
+  /* إكمال صف سابق برقمه: وقت العودة والنتيجة، و fixed = عالجه الكود تلقائيًا (الخادم يحوّله أصفر لأنواع الحل التلقائي فقط)
+   * Complete an earlier row by its id: the return time and outcome; fixed = the code fixed it (yellow for auto-fixable kinds only) */
+  function completeIncident(target, endedAt, outcome, fixed) {
+    if (!target) return '';
+    const meta = { target: String(target), outcome: String(outcome || ''), fixed: fixed === true };
+    if (endedAt) meta.endedAt = endedAt;
+    return queueError_('client/update', 'إكمال حادثة', 'الحادثة: ' + target, meta);
+  }
+  function closeIncidents_(endedAt) {
+    const list = readIncidents_();
+    if (!list.length) return;
+    list.forEach(function (x) {
+      completeIncident(x.id, endedAt, (x.kind === 'server' ? 'عاد الخادم للرد' : 'عاد الاتصال بالخادم') +
+        (x.run === PAGE_RUN ? '' : ' — رُصدت العودة بعد إعادة فتح التطبيق'));
+    });
+    writeIncidents_([]);
   }
 
   /* رقم فريد لكل خطأ: الخادم يتجاهل أي خطأ سجّله من قبل. إعادة الإرسال بعد 404 من جوجل (حيث يكون الخطأ قد
@@ -291,7 +328,55 @@
 
   // ===== تعطّل الموقع: الخادم لا يرد دقيقتين فأكثر — the outage: the server not answering two minutes or more =====
   let downSince = null, downReported = false, probing = false; // null = لا حادثة جارية / no outage in progress
-  function noteOk_() { downSince = null; downReported = false; } // رد سليم ← انتهى التعطّل / a healthy reply ← the outage is over
+  let finalReported = false, finalProbing = false, lastOkMs = 0;
+  function noteOk_() { // رد سليم ← انتهى التعطّل / a healthy reply ← the outage is over
+    lastOkMs = Date.now();
+    closeIncidents_(lastOkMs);
+    closeNetDown_(lastOkMs);
+    downSince = null; downReported = false; finalReported = false;
+  }
+
+  /* ===== (21 نوفمبر، طلب محمد) انقطاع شبكة الجوال نفسه: يبدأ بأول فشل والجوال بلا إنترنت والصفحة ظاهرة، ويُسجَّل صفًا واحدًا
+   * عند العودة بوقتيه إن دام دقيقتين فأكثر من وقت الاستخدام الفعلي (زمن الخلفية والنوم لا يُحتسب)
+   * The phone's own network outage: starts at the first failure with no internet while visible; logged as one row on the
+   * return, with both times, if it lasted two minutes or more of real use (background and sleep time don't count) */
+  let netDownSince = null, netPausedAt = 0;
+  function pausedNow_() { return hiddenClock_() + frozenClock_(); }
+  function noteNetDown_(at) {
+    if (netDownSince !== null || global.document.hidden) return;
+    netDownSince = at || Date.now(); netPausedAt = pausedNow_();
+  }
+  function closeNetDown_(endedAt) {
+    if (netDownSince === null) return;
+    const span = endedAt - netDownSince - (pausedNow_() - netPausedAt), brokeAt = netDownSince;
+    netDownSince = null;
+    if (span < LOG.DOWN || leavingPage) return;
+    queueError_('client/net-down', 'انقطاع شبكة الجوال: ' + sec_(span), 'الجوال بلا إنترنت (لا يصل حتى لموقعنا على GitHub) | مدة الاستخدام أثناء الانقطاع: ' + sec_(span),
+      { action: 'الاتصال', failKind: 'لا إنترنت في الجوال', outcome: 'عاد الاتصال', brokeAt: brokeAt, endedAt: endedAt });
+  }
+  global.addEventListener('offline', function () { noteNetDown_(Date.now()); });
+
+  /* ===== (21 نوفمبر، طلب محمد) فشل الاتصال نهائيًا: طلب فشل بعد الأصلي والاحتياطي والجوال متصل والصفحة ظاهرة — صف أحمر
+   * واحد لكل حادثة بوقت الانقطاع، ويُكمَل بوقت العودة عند أول رد سليم. والجوال بلا إنترنت ← انقطاع شبكة لا فشل خادم.
+   * A final failure: a request failed after the original and backup while online and visible — one red row per incident with
+   * the outage time, completed with the return time at the first healthy reply. No internet ← a network outage instead. */
+  function noteFinal_(action, attempts) {
+    if (finalReported || finalProbing) return;
+    finalProbing = true;
+    const start = Math.min.apply(null, attempts.map(function (a) { return a.startedAt; })), main = attempts[attempts.length - 1];
+    const seenAt = Date.now(); // لحظة معرفة الفشل / when the failure became known
+    deviceOnline_().then(function (probeMs) {
+      finalProbing = false;
+      if (leavingPage || finalReported) return;
+      if (probeMs === null) { noteNetDown_(start); return; } // الجوال بلا إنترنت / the phone has no internet
+      finalReported = true;
+      const id = queueError_('client/final-fail', 'فشل اتصال نهائي: ' + action + ' — ' + whatFailed_(main) + (attempts.length > 1 ? ' (الأصلي والاحتياطي)' : ''),
+        details_(attempts) + ' || فحص شبكة الجوال: سليم (رد الموقع خلال ' + sec_(probeMs) + ')',
+        { action: action, failKind: failKind_(main), outcome: 'فشل بعد ' + sec_(incidentMs_(attempts)), brokeAt: start });
+      if (lastOkMs > seenAt) completeIncident(id, lastOkMs, 'عاد الاتصال بالخادم'); // عاد أثناء الفحص / it returned during the check
+      else openIncident_(id, 'final', start);
+    });
+  }
 
   /* (26 أكتوبر) هل إنترنت الجهاز يعمل فعلًا؟ navigator.onLine يبقى true في أندرويد على بيانات جوال بلا إنترنت، فيُفحص
    * موقعنا نفسه (GitHub Pages — غير خادم Apps Script) بطلب HEAD لا يعترضه عامل الخدمة ولا ذاكرة المتصفح. لا رد خلال
@@ -318,18 +403,21 @@
     deviceOnline_().then(function (probeMs) {
       probing = false;
       // شبكة الجهاز معطّلة ← عابر لا يُسجَّل، ويُعاد الفحص مع الفشل التالي / the device's network is down ← not logged, rechecked on the next failure
+      if (probeMs === null) noteNetDown_(downSince); // (21 نوفمبر) الجوال بلا إنترنت / the phone has no internet
       if (probeMs === null || leavingPage || downReported || downSince === null) return;
       downReported = true;
       const main = attempts[attempts.length - 1];
-      queueError_('client/server-down', 'تعطّل الموقع: الخادم لا يرد منذ ' + sec_(span) + ' (آخر طلب: ' + action + ')',
+      const id = queueError_('client/server-down', 'تعطّل الموقع: الخادم لا يرد منذ ' + sec_(span) + ' (آخر طلب: ' + action + ')',
         details_(attempts) + ' || فحص شبكة الجهاز: سليم (رد الموقع خلال ' + sec_(probeMs) + ')',
-        { action: action, failKind: failKind_(main), outcome: 'الخادم لا يرد ' + sec_(span) });
+        { action: action, failKind: failKind_(main), outcome: 'الخادم لا يرد ' + sec_(span), brokeAt: downSince });
+      openIncident_(id, 'server', downSince); // يُكمَل بوقت العودة / completed with the return time
     });
   }
 
   /* فشل نهائي (طلب واحد، أو الأصلي والاحتياطي معًا) — a final failure (one request, or the original and backup together) */
   function reportFailure(action, attempts, note) {
-    if (leavingPage || !attempts.length || QUIET_ACTIONS[action] || attempts.every(function (a) { return a.offline; })) return;
+    if (leavingPage || !attempts.length || QUIET_ACTIONS[action]) return;
+    if (attempts.every(function (a) { return a.offline; })) { noteNetDown_(attempts[0].startedAt); return; } // (21 نوفمبر) انقطاع شبكة / a network outage
     if (attempts.some(function (a) { return a.hiddenDuring; })) return; // الصفحة في الخلفية ← لا يُسجَّل / in the background ← not logged
     if (WRITE_ACTIONS[action]) { // كتابة لم تتأكد — قد لا تكون البيانات حُفظت / an unconfirmed write — the data may not be saved
       const main = attempts.filter(function (a) { return a.kind === 'http'; })[0] || attempts[attempts.length - 1];
@@ -337,7 +425,8 @@
         details_(attempts) + (note ? ' || ' + note : ''), { action: action, failKind: failKind_(main), outcome: 'غير مؤكدة' });
       return;
     }
-    noteDown_(action, attempts); // غير ذلك: يُعدّ نحو «تعطّل الموقع» فقط / otherwise: it only counts toward an outage
+    noteFinal_(action, attempts); // (21 نوفمبر) «فشل اتصال نهائي» مرة لكل حادثة / once per incident
+    noteDown_(action, attempts); // ويُعدّ نحو «تعطّل الموقع» / and it counts toward an outage
   }
   /* تأخير عولج تلقائيًا: يُسجَّل فقط إن بلغ دقيقتين — an auto-handled delay: logged only at two minutes or more */
   function reportDelay_(action, attempts, how, detailsText, failed) {
@@ -411,6 +500,7 @@
 
   /* ===== الأخطاء البرمجية بالصفحة — Page JavaScript errors ===== */
   const seenJsErrors = {}; // نفس الخطأ مرة واحدة لكل فتح صفحة / the same error once per page open
+  const DEPENDENCY_ERROR_RE = /يحتاج .+ قبله|needs .+ first|missing dependencies/i;
   function isConnectionSideEffect_(msg) {
     // أخطاء ناتجة عن فشل اتصال مسجّل أصلًا أعلاه — لا تُكرر (ومنها «invalid-reply» الذي يسجّله الطلب الاحتياطي بنتيجته)
     // side effects of a connection failure already logged above — not duplicated (including «invalid-reply», logged by the backup request with its outcome)
@@ -420,6 +510,9 @@
   function queueJsError_(msg, where, stack) {
     if (!msg || msg === 'Script error.' || isConnectionSideEffect_(msg)) return; // "Script error." = سكربت خارجي بلا تفاصيل / cross-origin script with no details
     if (/ResizeObserver loop/i.test(msg)) return; // تحذير متصفح معروف غير ضار، لا خلل ظاهر / a known harmless browser warning, no visible fault
+    // (21 نوفمبر) «يحتاج … قبله»: نتيجة ملف لم يصل — يسجّله حارس التحميل صفًا واحدًا باسم الملف الناقص ومعه الملفات التي توقفت
+    // «needs … first»: a consequence of a file that didn't arrive — the load guard logs one row naming it and the stopped files
+    if (DEPENDENCY_ERROR_RE.test(msg) && global.SecLoadGuard && global.SecLoadGuard.failedFiles && global.SecLoadGuard.failedFiles().length) return;
     const key = msg + '|' + where;
     if (seenJsErrors[key]) return;
     seenJsErrors[key] = true;
@@ -460,12 +553,13 @@
   /* حدث تشخيصي تعرفه الصفحة وحدها (مثل نوع خطأ البصمة) — بنفس الطابور والتفاصيل الموحدة
    * A diagnostic event only the page knows about (e.g. the fingerprint error type) — through the same queue and standard details */
   function reportEvent(source, message, details, meta) {
-    if (leavingPage) return;
-    queueError_(String(source), String(message), String(details || ''), meta);
+    if (leavingPage) return '';
+    return queueError_(String(source), String(message), String(details || ''), meta);
   }
 
   global.SecConnection = { lastOkAt: lastOkAt, pingUnlessRecent: pingUnlessRecent,
     reportFailure: reportFailure, reportRecovered: reportRecovered, reportWrite: reportWrite, reportEvent: reportEvent,
+    completeIncident: completeIncident, // (21 نوفمبر) إكمال صف سابق (حارس التحميل والنسخة المؤقتة) / complete an earlier row
     // (19 نوفمبر) زمن الخلفية ونوم الجوال حتى الآن — لإحصائية البحث البطيء / background and sleep time so far, for the slow-search stats
     pausedMs: function () { return hiddenClock_() + frozenClock_(); } };
 })(window);

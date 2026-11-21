@@ -77,28 +77,60 @@
     });
   }
 
-  /* تسجيل سطر لكل ناقص: عبر SecConnection إن وُجد، وإلا مباشرة في طابور الأخطاء (يُرسل في التحميل التالي)
-   * One row per missing module: via SecConnection if present, else straight into the error queue (sent on the next load) */
+  /* (21 نوفمبر) صفوف الإعادة المنتظرة نتيجتها (في الجلسة نفسها) — the rows whose reload result is awaited (same session) */
+  const PENDING_KEY = KEY + '-pending';
+  const DEPENDENCY_ERROR_RE = /يحتاج .+ قبله|needs .+ first|missing dependencies/i;
+  function readPending_() { try { return JSON.parse(global.sessionStorage.getItem(PENDING_KEY) || '[]'); } catch (e) { return []; } }
+  function writePending_(ids) { try { if (ids.length) global.sessionStorage.setItem(PENDING_KEY, JSON.stringify(ids)); else global.sessionStorage.removeItem(PENDING_KEY); } catch (e) { /* محظور / blocked */ } }
+
+  /* عنصر في طابور الأخطاء: عبر SecConnection إن وُجد، وإلا مباشرة في الطابور (يُرسل في التحميل التالي). يُرجع رقمه
+   * An error-queue item: via SecConnection if present, else straight into the queue (sent on the next load). Returns its id */
+  function queue_(source, message, details, meta) {
+    if (global.SecConnection && global.SecConnection.reportEvent) return global.SecConnection.reportEvent(source, message, details, meta);
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    try { // ملف الاتصال نفسه ناقص ← نفس شكل الطابور / the connection file itself is missing ← the same queue shape
+      const qKey = (global.SEC2_CONFIG && global.SEC2_CONFIG.STORAGE_KEYS.PENDING_ERRORS) || 'sec2-pending-errors';
+      const q = JSON.parse(global.localStorage.getItem(qKey) || '[]');
+      q.push({ id: id, source: source, message: message, details: details + ' | الصفحة: ' + (global.location.pathname.split('/').pop() || 'index.html'), meta: meta });
+      global.localStorage.setItem(qKey, JSON.stringify(q.slice(-50)));
+    } catch (e) { /* تخزين محظور / storage blocked */ }
+    return id;
+  }
+  /* إكمال صفوف المحاولة الأولى بنتيجة الإعادة — completing the first attempt's rows with the reload's result */
+  function completePending_(outcome, fixed) {
+    const ids = readPending_();
+    writePending_([]);
+    ids.forEach(function (id) {
+      const meta = { target: id, outcome: outcome, fixed: fixed, endedAt: Date.now() };
+      if (global.SecConnection && global.SecConnection.completeIncident) global.SecConnection.completeIncident(id, meta.endedAt, outcome, fixed);
+      else queue_('client/update', 'إكمال حادثة', 'الحادثة: ' + id, meta);
+    });
+  }
+
+  /* تسجيل سطر لكل ناقص. (21 نوفمبر) ملف لم يصل ← ما توقف بسببه («يحتاج … قبله») يُذكر في صفه بدل صفوف مستقلة.
+   * المحاولة الأولى: صف أحمر «بانتظار نتيجة الإعادة» يُكمَل بعدها (عولج ← أصفر)؛ بعد الإعادة: صف أحمر «لم يُحل».
+   * One row per missing module; files stopped by a file that didn't arrive are named in its row instead of rows of their own.
+   * First attempt: a red row «awaiting the reload's result», completed afterwards (fixed ← yellow); after the reload: red. */
   function reportMissing_(list, attempt) {
     const controlled = !!(global.navigator.serviceWorker && global.navigator.serviceWorker.controller);
-    list.forEach(function (m) {
+    const roots = list.filter(function (m) { return m.state === 'لم يصل الملف'; });
+    const stopped = roots.length ? list.filter(function (m) { return m.state === 'وصل ورمى خطأ' && DEPENDENCY_ERROR_RE.test(m.execError); }) : [];
+    const ids = [];
+    list.filter(function (m) { return stopped.indexOf(m) === -1; }).forEach(function (m) {
       const t = m.timing;
       const details = 'المكوّن: ' + m.name + ' | الملف: ' + m.file + ' | الحالة: ' + m.state +
         ' | حدث فشل التحميل: ' + (failedScripts[m.file] ? 'نعم' : 'لا') + (m.execError ? ' | خطأ التنفيذ: ' + m.execError : '') +
         ' | عامل الخدمة يتحكم بالصفحة: ' + (controlled ? 'نعم' : 'لا') +
         (t ? ' | رمز الرد: ' + (t.status || 'غير متاح') + ' | المصدر: ' + t.via + ' | المنقول: ' + t.bytes + ' بايت' : ' | توقيت الموارد: لا سجل للملف') +
-        ' | المحاولة: ' + attempt;
+        ' | المحاولة: ' + attempt +
+        (m === roots[0] && stopped.length ? ' | ملفات توقفت بسببه: ' + stopped.map(function (x) { return x.file.split('/').pop(); }).join('، ') : '');
       const message = m.state + ': ' + m.file;
-      const meta = { action: 'تحميل الصفحة', failKind: m.state, file: m.file, outcome: attempt === 'الأولى' ? 'إعادة تحميل واحدة' : 'رسالة للمستخدم' };
-      if (global.SecConnection && global.SecConnection.reportEvent) { global.SecConnection.reportEvent('client/load', message, details, meta); return; }
-      try { // ملف الاتصال نفسه ناقص ← نفس شكل الطابور / the connection file itself is missing ← the same queue shape
-        const qKey = (global.SEC2_CONFIG && global.SEC2_CONFIG.STORAGE_KEYS.PENDING_ERRORS) || 'sec2-pending-errors';
-        const q = JSON.parse(global.localStorage.getItem(qKey) || '[]');
-        q.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8), source: 'client/load', message: message,
-          details: details + ' | الصفحة: ' + (global.location.pathname.split('/').pop() || 'index.html'), meta: meta });
-        global.localStorage.setItem(qKey, JSON.stringify(q.slice(-50)));
-      } catch (e) { /* تخزين محظور / storage blocked */ }
+      const meta = { action: 'تحميل الصفحة', failKind: m.state, file: m.file, brokeAt: Date.now(),
+        outcome: attempt === 'الأولى' ? 'بانتظار نتيجة الإعادة' : 'لم يُحل بعد الإعادة — رسالة للمستخدم' };
+      ids.push(queue_('client/load', message, details, meta));
     });
+    if (attempt === 'الأولى') writePending_(ids.filter(Boolean));
+    else completePending_('لم تنجح الإعادة', false); // المحاولة الأولى تبقى حمراء / the first attempt stays red
   }
 
   /* رسالة «تحقق من الاتصال» بعد فشل الإعادة الواحدة — بلا إعادة أخرى تلقائية، وزر يدوي فقط
@@ -140,8 +172,12 @@
       if (!body) return;
       if (body.classList.contains('home-page') && !global.SecHome) recover('home-not-started');
       else if (body.classList.contains('auth-page') && !global.authForm) recover('auth-not-started');
+      // (21 نوفمبر) الصفحة بدأت سليمة بعد الإعادة ← صفوف المحاولة الأولى «عولج بإعادة التحميل» (أصفر)
+      // the page started fine after the reload ← the first attempt's rows «fixed by the reload» (yellow)
+      else if (readPending_().length && !d.getElementById('loadFailNote')) completePending_('عولج بإعادة التحميل', true);
     }, START_WAIT_MS);
   });
 
-  global.SecLoadGuard = { recover: recover, missingModules: missingModules, handleMissing: handleMissing, KEY: KEY };
+  global.SecLoadGuard = { recover: recover, missingModules: missingModules, handleMissing: handleMissing, KEY: KEY,
+    failedFiles: function () { return Object.keys(failedScripts); } }; // (21 نوفمبر) الملفات التي لم تصل / files that didn't arrive
 })(typeof window !== 'undefined' ? window : globalThis);

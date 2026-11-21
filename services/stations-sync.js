@@ -100,12 +100,48 @@
   function logIssue_(type, reason) {
     if (offline_()) return; // فشل متوقع / an expected failure
     pushLog_(K.STATIONS_ISSUES_LOG, { at: now_(), type: type, result: 'failed', reason: String(reason).slice(0, 160) });
+    cacheIncidentFailed_(type, reason);
+  }
+
+  /* ===== (21 نوفمبر، طلب محمد) فشل تحديث النسخة المؤقتة في «سجل الأخطاء» — The stations-copy failure in the error log =====
+   * أول فشل ← صف أحمر بوقته. فشل في دورة لاحقة ← يُكتب في الصف نفسه «مستمرة — فشلت N دورات». النجاح التالي (نسخة محفوظة
+   * فعلًا) ← وقت العودة، و«حُلّت في الدورة التالية» تحوّله أصفر؛ أما بعد أكثر من دورة فيبقى أحمر بعدد الدورات.
+   * الدورة = كل تحميل كامل أو مزامنة. والمفتوح محفوظ في الجهاز فيُكمَل حتى بعد إعادة فتح التطبيق.
+   * First failure ← a red row with its time. A failure in a later cycle ← the same row says «still failing — N cycles». The
+   * next success (a copy really saved) ← the return time; fixed in the next cycle turns it yellow, after more cycles it
+   * stays red with the count. A cycle = each full load or sync. The open one is kept on the device across reopenings. */
+  let cycleNo = 0;
+  const RUN_ID = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  function cycleId_() { return RUN_ID + ':' + cycleNo; }
+  function readCacheIncident_() { try { return JSON.parse(lsGet_(K.CACHE_INCIDENT) || 'null'); } catch (e) { return null; } }
+  function cacheIncidentFailed_(type, reason) {
+    const C = global.SecConnection;
+    if (!C || !C.reportEvent) return;
+    const open = readCacheIncident_(), cycle = cycleId_();
+    if (open && open.id) {
+      if (open.cycle === cycle) return; // الدورة نفسها سُجّلت / this cycle is already recorded
+      open.cycle = cycle; open.fails = (open.fails || 1) + 1;
+      lsSet_(K.CACHE_INCIDENT, JSON.stringify(open));
+      if (C.completeIncident) C.completeIncident(open.id, null, 'مستمرة — فشلت ' + open.fails + ' دورات (آخرها: ' + String(reason).slice(0, 80) + ')', false);
+      return;
+    }
+    const id = C.reportEvent('client/cache-fail', 'فشل تحديث النسخة المؤقتة: ' + (type === 'full' ? 'تحميل كامل' : 'مزامنة') + ' — ' + String(reason).slice(0, 120),
+      'النوع: ' + type + ' | السبب: ' + String(reason).slice(0, 160) + ' | النسخة في الجهاز: ' + (copy ? copy.stations.length + ' محطة، الإصدار ' + copy.version : 'لا توجد'),
+      { action: type === 'full' ? 'getAllStations' : 'getUpdatedStationsSince', failKind: String(reason).slice(0, 80), outcome: 'مستمرة — بانتظار الدورة التالية', brokeAt: Date.now() });
+    if (id) lsSet_(K.CACHE_INCIDENT, JSON.stringify({ id: id, cycle: cycle, fails: 1 }));
+  }
+  function cacheIncidentFixed_() {
+    const open = readCacheIncident_();
+    if (!open || !open.id || open.cycle === cycleId_() || !persisted) return; // الحل في دورة لاحقة وبنسخة محفوظة فقط / only in a later cycle with a saved copy
+    try { global.localStorage.removeItem(K.CACHE_INCIDENT); } catch (e) { /* محظور / blocked */ }
+    const C = global.SecConnection, next = (open.fails || 1) === 1;
+    if (C && C.completeIncident) C.completeIncident(open.id, Date.now(), next ? 'حُلّت في الدورة التالية' : 'حُلّت بعد ' + open.fails + ' دورات فاشلة', next);
   }
   function writeMeta_() {
     if (!copy) return;
     lsSet_(K.STATIONS_META, JSON.stringify({ version: copy.version, count: copy.stations.length, bytes: copy.sizeBytes || 0, savedAt: copy.savedAt || null, lastSync: copy.lastSync || null, syncedAt: syncedAt || null, store: store, persisted: persisted }));
   }
-  function markSynced_() { syncedAt = now_(); firstLoadFailed = false; pendingVersion = null; writeMeta_(); emit_('confirmed'); }
+  function markSynced_() { syncedAt = now_(); firstLoadFailed = false; pendingVersion = null; writeMeta_(); cacheIncidentFixed_(); emit_('confirmed'); }
   function markPending_(version) { pendingVersion = String(version); emit_('pending'); }
 
   // ===== الاعتماد والتحقق — Commit and verify =====
@@ -190,6 +226,7 @@
     return fullLoadRun;
   }
   async function fullLoad_(o) {
+    cycleNo++; // (21 نوفمبر) دورة جديدة / a new cycle
     if (offline_()) { if (!copy) firstLoadFailed = true; return { ok: false, reason: MSG.NO_DATA_OFFLINE }; }
     const fl = loader || DB.createFullLoad();
     const resumed = !!loader;
@@ -241,6 +278,7 @@
   /* ← { ok, persisted, changes, reason } — مزامنة تحتاج تحميلًا كاملًا تنتقل إليه تلقائيًا */
   async function sync() {
     if (!copy) return fullLoad();
+    cycleNo++; // (21 نوفمبر) دورة جديدة / a new cycle
     if (offline_()) return { ok: false, reason: MSG.NO_DATA_OFFLINE };
     let res = null;
     // (8 نوفمبر) مع رقم العضو: الخادم سيقصر المزامنة على الأعضاء بعد أن تحدّث الأجهزة — with the member's phone: the server will

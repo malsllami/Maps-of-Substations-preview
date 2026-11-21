@@ -48,6 +48,8 @@
       MAP_TOOLS_HIDDEN: PREFIX + 'map-tools-hidden',     // أخفى المستخدم صف أدوات الخريطة ('1') / the user hid the map tools row
       LAST_BACKEND_OK: PREFIX + 'last-backend-ok',       // وقت آخر رد سليم من الخادم / the last valid server reply time
       PENDING_ERRORS: PREFIX + 'pending-errors',         // طابور أخطاء المتصفح قبل إرسالها / the browser error queue
+      OPEN_INCIDENTS: PREFIX + 'open-incidents',         // (21 نوفمبر) حوادث انقطاع تنتظر وقت العودة / outages waiting for their return time
+      CACHE_INCIDENT: PREFIX + 'cache-incident',         // (21 نوفمبر) فشل تحديث النسخة المؤقتة المفتوح / the open stations-copy failure
       PERF_LOG: PREFIX + 'perf-log',                     // سجل قياس زمن الطلبات / request timing log
       PERF_TAB: PREFIX + 'perf-tab',                     // التبويب المفتوح في صفحة القياس / the open tab on the perf page
       SETTINGS_LISTS: PREFIX + 'settings-lists',         // آخر نسخة من قوائم الإعدادات للعمل بلا إنترنت / last settings lists for offline use

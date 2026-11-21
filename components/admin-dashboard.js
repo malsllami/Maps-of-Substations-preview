@@ -49,7 +49,9 @@
   };
   const ALERT_ICON = {
     'فشل تحديث بيانات': '⚠️', 'محاولة دخول خاطئة': '🔒', 'مشاكل اتصال': '📡', 'تنبيهات': 'ℹ️', 'صفحة 404 بدل الرد': '🚫',
-    'فشل أثناء الخلفية أو النوم': '🌙', 'نتيجة كتابة غير مؤكدة': '❔', 'تأخر وعالجه الاحتياطي': '🟡', 'تأخير اتصال': '🐢', 'تأخير اتصال طويل': '⏳', 'تعطّل الموقع': '🛑', 'كتابة تأكدت بإعادة الإرسال': '✅', 'خروج قسري': '🚪', 'خطأ برمجي': '🐞', 'رفض دخول لوحة المدير': '⛔'
+    'فشل أثناء الخلفية أو النوم': '🌙', 'نتيجة كتابة غير مؤكدة': '❔', 'تأخر وعالجه الاحتياطي': '🟡', 'تأخير اتصال': '🐢', 'تأخير اتصال طويل': '⏳', 'تعطّل الموقع': '🛑', 'كتابة تأكدت بإعادة الإرسال': '✅', 'خروج قسري': '🚪', 'خطأ برمجي': '🐞', 'رفض دخول لوحة المدير': '⛔',
+    // (21 نوفمبر) أنواع محمد الجديدة / Mohammed's new kinds
+    'فشل اتصال نهائي': '📵', 'انقطاع شبكة الجوال': '📶', 'فشل تحديث النسخة المؤقتة': '🗃️', 'تعذّر تحميل ملف': '📦'
   };
   const REPORT_COLOR = { green: '#2ECC71', yellow: '#C8A24E', orange: '#E08A3C', blue: 'var(--blue-mid)', teal: 'var(--teal)', red: '#E0654F' };
   // أيقونات خطية للوحة العمليات (تصميم محمد، 15 أكتوبر) — line icons for the operations board
@@ -277,12 +279,10 @@
           }).join('') || '<div class="coming-soon">' + MSG.NONE + '</div>') +
           // كل المشاكل بكل درجاتها: الدرجة الحالية والحالة والأعضاء المختلفون والمرات منفصلة (مواصفات محمد 16 أكتوبر)
           // Every problem at every level: current level, status, distinct members and occurrences kept separate
-          (problems.length ? '<div class="log-problems-title">أحدث المشاكل</div>' + table_(['المشكلة', 'الدرجة', 'الحالة', 'الأعضاء', 'المرات', 'آخر ظهور'], problems.map(function (p) {
-            const last = new Date(p && p.lastSeen);
-            return '<tr><td class="log-msg">' + (ALERT_ICON[p.category] || '') + ' ' + esc(p.message) + '<span class="sub">' + esc(p.code || p.source) + (p.devices && p.devices.length ? ' · ' + esc(p.devices.join('، ')) : '') + '</span></td>' +
-              '<td>' + levelBadge_(p.level || p.base) + '</td><td>' + esc(p.status || '—') + '</td><td class="mono">' + show_(p.members) + '</td><td class="mono">' + show_(p.count) + '</td>' +
-              '<td>' + (isNaN(last.getTime()) ? '—' : dateCell(last) + '<span class="sub">' + esc(D.time(last)) + '</span>') + '</td></tr>';
-          }).join('')) : '') + '</div></div></div>';
+          // (21 نوفمبر، النموذج 1) كل مشكلة سطر بشريط جانبي أحمر «خطأ مهم» أو أصفر «تنبيه»، الأحدث أولًا
+          // each problem a row with a red «important error» or yellow «alert» side stripe, newest first
+          (problems.length ? '<div class="log-problems-title">أحدث المشاكل <span class="prob-legend"><i class="is-red"></i>خطأ مهم <i class="is-yellow"></i>تنبيه</span></div>' +
+            '<div class="prob-list" data-role="problems">' + problems.map(problemRow_).join('') + '</div>' : '') + '</div></div></div>';
       renderAlerts_(d.alertsRecent);
       CARDS.forEach(function (name) { loadCard_(name); });
     }
@@ -294,16 +294,31 @@
       const items = (Array.isArray(list) ? list : []).filter(function (p) { return p && p.message; });
       alerts.hidden = !items.length;
       if (!items.length) { alerts.innerHTML = ''; return; }
-      alerts.innerHTML = '<span class="alert-strip-title">⚠️ مشاكل تحتاج انتباهك (حرج جدًا / مهم جدًا — آخر 72 ساعة): ' + items.length + '</span><div class="alert-strip-items">' + items.map(function (p) {
+      alerts.innerHTML = '<span class="alert-strip-title">⚠️ أخطاء مهمة تحتاج انتباهك (آخر 72 ساعة): ' + items.length + '</span><div class="alert-strip-items">' + items.map(function (p) {
         const first = new Date(p.firstSeen);
         return '<span class="alert-item" title="' + esc(p.category) + ' — ' + esc(p.code || p.source) + ' — ' + esc(p.status || '') + '">' + levelBadge_(p.level) + ' ' + (ALERT_ICON[p.category] || '⚠️') +
           ' <span class="alert-item-msg">' + esc(p.message) + '</span>' +
           '<b class="alert-item-count">' + show_(p.members) + ' عضو · ×' + show_(p.count) + '</b>' + (isNaN(first.getTime()) ? '' : '<span class="alert-item-age">' + esc(D.relativeTime(first).replace(/^قبل /, 'منذ ')) + '</span>') + '</span>';
       }).join('') + '</div>';
     }
+    /* (21 نوفمبر) سطر مشكلة: الشريط بلونها، والعنوان، والنتيجة (العودة والمدة)، ثم الرمز والأعضاء والمرات وآخر ظهور
+     * A problem row: the stripe in its color, the title, the outcome (return and duration), then code, members, count, last seen */
+    function problemRow_(p) {
+      const red = p && (p.color ? p.color === 'red' : ['حرج جدًا', 'مهم جدًا', 'خطأ مهم'].indexOf(p.level || p.base) !== -1);
+      const last = new Date(p && p.lastSeen), broke = new Date(p && p.brokeAt), back = new Date(p && p.backAt);
+      const times = !isNaN(broke.getTime()) ? '<span class="prob-times"><span class="prob-broke">⛔ ' + esc(D.time(broke)) + '</span>' +
+        (!isNaN(back.getTime()) ? '<span class="prob-back">↺ ' + esc(D.time(back)) + '</span>' : '<span class="prob-open">لم يُعرف وقت العودة بعد</span>') +
+        (p.duration ? '<b class="prob-dur">' + esc(p.duration) + '</b>' : '') + '</span>' : '';
+      return '<div class="prob-row ' + (red ? 'is-red' : 'is-yellow') + '"><div class="prob-main">' +
+        '<div class="prob-title">' + (ALERT_ICON[p.category] || '') + ' ' + esc(p.message) + '</div>' +
+        (p.outcome ? '<div class="prob-outcome">' + esc(p.outcome) + '</div>' : '') + times +
+        '<div class="prob-sub">' + esc(p.code || p.source) + (p.devices && p.devices.length ? ' · ' + esc(p.devices.join('، ')) : '') + '</div></div>' +
+        '<div class="prob-side"><span class="prob-level">' + esc(red ? 'خطأ مهم' : 'تنبيه') + '</span><span class="mono">' + show_(p.members) + ' عضو · ×' + show_(p.count) + '</span>' +
+        (isNaN(last.getTime()) ? '' : '<span>' + dateCell(last) + ' ' + esc(D.time(last)) + '</span>') + '</div></div>';
+    }
     /* شارة الدرجة — the severity badge */
     function levelBadge_(level) {
-      const cls = { 'حرج جدًا': 'lv-critical', 'مهم جدًا': 'lv-high', 'مهم': 'lv-mid', 'منخفض': 'lv-low' }[level] || 'lv-mid';
+      const cls = { 'خطأ مهم': 'lv-critical', 'تنبيه': 'lv-mid', 'حرج جدًا': 'lv-critical', 'مهم جدًا': 'lv-high', 'مهم': 'lv-mid', 'منخفض': 'lv-low' }[level] || 'lv-mid';
       return '<span class="lv-badge ' + cls + '">' + esc(level || '—') + '</span>';
     }
     function section_(name, title, badge) {
