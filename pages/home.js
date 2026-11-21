@@ -390,7 +390,9 @@
   // (19 نوفمبر، قرار محمد) شاشة «البيانات» = بطاقة البيانات المؤقتة وحدها: لا بحث ولا بطاقات إحصاءات ولا إجراءات، فلا طلب getStats منها
   // the data screen = the cached-data card alone: no search, stats or action tiles, so no getStats request from it
   const stats = { refresh: function () { return Promise.resolve(false); }, refreshIfStale: function () {} };
-  const recent = SecRecentStations.mount($('recentSlot'), { onSelect: goToStation });
+  // (21 نوفمبر، طلب محمد) «محطاتك الأخيرة» ظاهرة دائمًا في شاشة «البيانات» فوق بطاقة البيانات المؤقتة
+  // «your recent stations» always shown on the data screen, above the cached-data card
+  const recent = SecRecentStations.mount($('recentSlot'), { onSelect: goToStation, open: true });
   SecStorageSection.mount($('storageSlot'), { onCleared: function () { status.refreshOffline(); },
     // (19 نوفمبر) سطر الحالة داخل البطاقة، وزر «تحديث» يحدّث نسخة المحطات كزر الشريط — the status line inside the card; «refresh» syncs the copy
     syncLine: $('storageSyncLine'), onRefresh: function () { if (header.refreshButton) header.refreshButton.click(); } });

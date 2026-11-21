@@ -86,7 +86,8 @@
   function emit_() { listeners.slice().forEach(function (fn) { try { fn(); } catch (e) { /* لا شيء / nothing */ } }); }
 
   /**
-   * mount(container, opts) — opts: { onSelect(station) } — تُرسم اللوحة (مخفية) داخل container؛ الصفحة تربط زرها بـ toggle().
+   * mount(container, opts) — opts: { onSelect(station), open } — تُرسم اللوحة (مخفية) داخل container؛ الصفحة تربط زرها بـ toggle().
+   * (21 نوفمبر) open: true ← ظاهرة دائمًا من البداية بلا تمرير للصفحة / always shown from the start, without scrolling the page
    * يُرجع { toggle(open?)، isOpen()، render()، destroy() }
    */
   function mount(container, opts) {
@@ -159,6 +160,7 @@
     global.addEventListener('storage', onStorage_);
     // بعد كل مزامنة تُراجَع القائمة على النسخة الجديدة — after every sync the list is checked against the new copy
     const offSync = global.SecStationsSync && global.SecStationsSync.onChange ? global.SecStationsSync.onChange(render) : null;
+    if (o.open) panel.classList.add('show');
     render();
 
     return {
