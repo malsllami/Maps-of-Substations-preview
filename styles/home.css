@@ -137,8 +137,7 @@ body.guest-mode .home-title{display:none;}
 /* شريط أدوات الخريطة بلا ازدحام: كل الأدوات في سطر واحد على 390 بلا قص (ملاحظة محمد 5.6) — the map toolbar uncluttered */
 .view-map .tb-div{display:none;}
 .view-map .toolbar-scroll{justify-content:space-between;gap:2px;padding:6px 6px;}
-.view-map .toolbar-btn,.view-map .map-mode-chip{padding:7px 7px;font-size:13px;gap:4px;}
-.view-map .map-mode-chip .mm-auto-badge{font-size:11px;padding:2px 6px;}
+.view-map .toolbar-btn{padding:7px 7px;font-size:13px;gap:4px;}
 
 /* ===== نظام الألوان الوظيفي (اعتماد محمد، 19 أكتوبر) — the functional color system =====
    اللون يدل على نوع البيانات في الوضعين (الدرجة تتغير فقط): التوزيع أخضر، التحويل أزرق، العمليات ذهبي، الأعطال نحاسي،
@@ -253,7 +252,7 @@ body:not(.nav-full) .view-map .map-tool-hint{position:relative;z-index:10;}
 /* أدوات الخريطة أزرار زجاجية منفصلة — the map tools as separate glass pills */
 body:not(.nav-full) .view-map .map-toolbar-bar{background:none;border:none;border-radius:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;overflow:visible;}
 body:not(.nav-full) .view-map .toolbar-scroll{height:auto;padding:0 0 2px;gap:6px;justify-content:flex-start;}
-body:not(.nav-full) .view-map .toolbar-btn,body:not(.nav-full) .view-map .map-mode-chip{padding:8px 11px;border-radius:999px;font-size:13px;
+body:not(.nav-full) .view-map .toolbar-btn{padding:8px 11px;border-radius:999px;font-size:13px;
   background:var(--glass-bg);border:1px solid var(--glass-line);color:var(--text-primary);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);}
 body:not(.nav-full) .view-map .toolbar-btn.active{background:var(--teal);border-color:var(--teal);color:#04241c;}
 /* لوحات الأدوات والتلميح بطاقات زجاجية تحت الأزرار — the tool panels and the hint as glass cards under the pills */
@@ -266,8 +265,7 @@ body:not(.nav-full) .view-map .station-sheet{position:absolute;left:8px;right:8p
   background:var(--glass-strong);border:1px solid var(--glass-line);-webkit-backdrop-filter:blur(16px) saturate(1.25);backdrop-filter:blur(16px) saturate(1.25);} /* أوضح فوق الخريطة النهارية / clearer over the day map */
 /* الأدوات الخمس في سطر واحد بلا قص على 390 (الأنماط، قريب، مغذي، أعطال، ⋯) — all five tools on one line at 390 */
 body:not(.nav-full) .view-map .toolbar-scroll{gap:5px;}
-body:not(.nav-full) .view-map .toolbar-btn,body:not(.nav-full) .view-map .map-mode-chip{padding:7px 9px;gap:4px;font-size:12.5px;}
-@media (max-width:440px){ body:not(.nav-full) .view-map .map-mode-chip .mm-auto-badge{display:none;} }
+body:not(.nav-full) .view-map .toolbar-btn{padding:7px 9px;gap:4px;font-size:12.5px;}
 
 /* ===== الرئيسية = الخريطة (طلب محمد 20 أكتوبر، نموذج الصورة) =====
    عمود أزرار زجاجية على اليمين تحت البحث: الملاحة المباشرة (عند وجود محطة)، التكبير/التصغير، الطبقات، الأدوات؛ و«موقعي»
@@ -358,16 +356,19 @@ body.home-page .fullpage-form-header{padding-top:calc(20px + env(safe-area-inset
   --tb-outage-fg:#7A5C00;--tb-outage-bg:#FFF4CC;--tb-outage-line:#E9C46A;}
 body:not(.nav-full) .view-map .toolbar-scroll{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-inline:2px;}
 body:not(.nav-full) .view-map .toolbar-scroll::-webkit-scrollbar{display:none;}
-body:not(.nav-full) .view-map .toolbar-btn,body:not(.nav-full) .view-map .map-mode-chip{flex:0 0 auto;height:38px;padding:0 13px;gap:5px;font-size:13px;white-space:nowrap;}
+body:not(.nav-full) .view-map .toolbar-btn{flex:0 0 auto;height:38px;padding:0 13px;gap:5px;font-size:13px;white-space:nowrap;}
 body:not(.nav-full) .view-map .toolbar-btn .tb-icon{display:inline;font-size:15px;}
 body:not(.nav-full) .view-map [data-nearby="nearby"]{--tb-fg:var(--c-dist-fg);--tb-bg:var(--c-dist-bg);--tb-line:var(--c-dist-line);}
 body:not(.nav-full) .view-map [data-nearby="feeder"]{--tb-fg:var(--tb-feeder-fg);--tb-bg:var(--tb-feeder-bg);--tb-line:var(--tb-feeder-line);}
 body:not(.nav-full) .view-map [data-outage="toggle"]{--tb-fg:var(--tb-outage-fg);--tb-bg:var(--tb-outage-bg);--tb-line:var(--tb-outage-line);}
 body:not(.nav-full) .view-map [data-tool="measure"]{--tb-fg:var(--c-info-fg);--tb-bg:var(--c-info-bg);--tb-line:var(--c-info-line);}
 body:not(.nav-full) .view-map [data-tool="route"]{--tb-fg:var(--c-sub-fg);--tb-bg:var(--c-sub-bg);--tb-line:var(--c-sub-line);}
-body:not(.nav-full) .view-map .toolbar-btn[data-nearby],body:not(.nav-full) .view-map .toolbar-btn[data-outage],body:not(.nav-full) .view-map .toolbar-btn[data-tool]{
+/* (21 نوفمبر) «آخر المحطات» بلونها الخاص — the recent-stations button in its own color */
+body:not(.nav-full) .view-map [data-recent="toggle"]{--tb-fg:#F29BBF;--tb-bg:#3A1F2C;--tb-line:#8E4A66;}
+[data-theme="light"] body:not(.nav-full) .view-map [data-recent="toggle"]{--tb-fg:#8A1F4B;--tb-bg:#FCE7F0;--tb-line:#EBB0C8;}
+body:not(.nav-full) .view-map .toolbar-btn[data-nearby],body:not(.nav-full) .view-map .toolbar-btn[data-outage],body:not(.nav-full) .view-map .toolbar-btn[data-tool],body:not(.nav-full) .view-map .toolbar-btn[data-recent]{
   color:var(--tb-fg);background:var(--tb-bg);border-color:var(--tb-line);}
-body:not(.nav-full) .view-map .toolbar-btn[data-nearby].active,body:not(.nav-full) .view-map .toolbar-btn[data-outage].active,body:not(.nav-full) .view-map .toolbar-btn[data-tool].active{
+body:not(.nav-full) .view-map .toolbar-btn[data-nearby].active,body:not(.nav-full) .view-map .toolbar-btn[data-outage].active,body:not(.nav-full) .view-map .toolbar-btn[data-tool].active,body:not(.nav-full) .view-map .toolbar-btn[data-recent].active{
   background:var(--tb-fg);border-color:var(--tb-fg);color:var(--bg);}
 
 /* لوحة نوع البحث (11 نوفمبر، تصميم محمد): صفّان بأعمدة متساوية — العناوين تشرح الاختيار وتتلوّن معه، وتظهر أثناء البحث فقط

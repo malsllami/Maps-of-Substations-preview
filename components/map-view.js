@@ -47,7 +47,6 @@
     layers: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 22 7.5 12 13 2 7.5 12 2"/><polyline points="2 12.5 12 18 22 12.5"/></svg>',
     locate: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/><line x1="12" y1="1.5" x2="12" y2="4.5"/><line x1="12" y1="19.5" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22.5" y2="12"/></svg>'
   };
-  const CHEV = '<svg class="mm-chev" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>';
   const CHECK = '<svg class="mm-check" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
 
   function savedMode_() { try { const m = global.localStorage.getItem(KEY); return MODES.indexOf(m) !== -1 ? m : 'auto'; } catch (e) { return 'auto'; } }
@@ -57,7 +56,8 @@
     return '<div class="map-toolbar-bar"><div class="toolbar-scroll" data-role="toolbar">' +
         // عنوان الشريط (تصميم محمد، 15 أكتوبر) — the toolbar title (Mohammed's design)
         '<span class="tb-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>الخريطة</span>' +
-        '<div class="map-mode-chip" data-act="chip" role="button" tabindex="0" title="نوع الخريطة" aria-haspopup="true" aria-expanded="false"><span class="mm-icon" data-role="chip-icon"></span><span data-role="chip-label"></span><span class="mm-auto-badge" data-role="auto-badge">تلقائي</span>' + CHEV + '</div>' +
+        // (21 نوفمبر، طلب محمد) شريحة «نهاري/ليلي» حُذفت: زر الطبقات الجانبي يؤدي الدور نفسه، ومكانها «آخر المحطات»
+        // the «day/night» chip removed: the side layers button does the same; «recent stations» takes its place
         '<div class="tb-div"></div><span class="map-tools-slot" data-role="tools"></span></div></div>' +
       '<div class="map-mode-panel" data-role="panel" role="menu">' + MODES.map(function (m) {
         return '<button type="button" class="map-mode-opt" data-mode="' + m + '" role="menuitemradio"><span class="mm-dot" style="background:' + META[m].color + '"></span><span class="mm-opt-icon">' + ICON[m] + '</span>' + META[m].option + CHECK + '</button>';
@@ -108,11 +108,6 @@
     function layerChanged_() { if (o.onLayerChange) { try { o.onLayerChange(); } catch (e) { /* لا شيء / nothing */ } } }
 
     function renderUI_() {
-      const r = resolved(), meta = META[r];
-      const icon = q('chip-icon'), label = q('chip-label');
-      icon.innerHTML = ICON[r]; icon.style.color = meta.color;
-      label.textContent = meta.label; label.style.color = meta.color;
-      q('auto-badge').hidden = mode !== 'auto';
       stage.querySelectorAll('.map-mode-opt').forEach(function (b) { const on = b.dataset.mode === mode; b.classList.toggle('active', on); b.setAttribute('aria-checked', on ? 'true' : 'false'); });
     }
 
@@ -168,8 +163,8 @@
       apply(); closePanel_();
     }
     function togglePanel_(open) {
-      const p = q('panel'), chip = stage.querySelector('[data-act="chip"]');
-      p.classList.toggle('show', open); chip.classList.toggle('open', open); chip.setAttribute('aria-expanded', open ? 'true' : 'false');
+      const p = q('panel'), btn = stage.querySelector('[data-act="side-layers"]');
+      p.classList.toggle('show', open); btn.setAttribute('aria-expanded', open ? 'true' : 'false');
     }
     function closePanel_() { togglePanel_(false); }
 
@@ -300,17 +295,13 @@
       if (!t || !stage.contains(t)) return;
       if (t.classList.contains('map-mode-opt')) { setMode(t.dataset.mode); return; }
       const act = t.dataset.act;
-      if (act === 'chip') { e.stopPropagation(); togglePanel_(!q('panel').classList.contains('show')); }
-      else if (act === 'side-layers') { e.stopPropagation(); togglePanel_(!q('panel').classList.contains('show')); }
+      if (act === 'side-layers') { e.stopPropagation(); togglePanel_(!q('panel').classList.contains('show')); }
       else if (act === 'side-locate') { if (o.onLocate) o.onLocate(); }
       else if (act === 'zoom-in') map.zoomIn();
       else if (act === 'zoom-out') map.zoomOut();
     }
-    function onDocClick_(e) { const chip = stage.querySelector('[data-act="chip"]'); if (!chip.contains(e.target) && !q('panel').contains(e.target)) closePanel_(); }
-    function onKey_(e) {
-      if (e.key === 'Escape') closePanel_();
-      else if ((e.key === 'Enter' || e.key === ' ') && e.target.dataset && e.target.dataset.act === 'chip') { e.preventDefault(); togglePanel_(!q('panel').classList.contains('show')); }
-    }
+    function onDocClick_(e) { const btn = stage.querySelector('[data-act="side-layers"]'); if (!btn.contains(e.target) && !q('panel').contains(e.target)) closePanel_(); }
+    function onKey_(e) { if (e.key === 'Escape') closePanel_(); }
     function onOffline_() { apply(); }
     function onOnline_() { fallbackUntil = 0; apply(); }
 

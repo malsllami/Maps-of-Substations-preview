@@ -32,7 +32,7 @@ importScripts('config/الإعدادات.js');
 // The build stamp: a browser detects a new version only when this file or the config changes; any other site file alone never
 // reaches devices. Not edited by hand: the pre-commit hook updates it on every commit with a site file; the gate verifies.
 const SW_RELEASE = 6; // (8 نوفمبر) رقم الإصدار المتسلسل = SEC2_RELEASE في config/النسخة.js، ويقرؤه الخادم من هنا / the release number, read by the server from here
-const SW_BUILD = '20261121-162829';
+const SW_BUILD = '20261121-165327';
 const CONFIG = self.SEC2_CONFIG;
 const CACHE_NAME = CONFIG.SHELL_CACHE_NAME;
 const NEXT_CACHE = CACHE_NAME + '-next'; // تثبيت نسخة جديدة دون لمس العاملة / installing a new version without touching the working one
@@ -60,7 +60,7 @@ const APP_SHELL = [
   'components/auth-form.js', 'components/cabinets-tool.js', 'components/connection-status.js', 'components/contact-admin.js', 'components/delete-station.js',
   'components/device-copies.js', 'components/globe.js', 'components/map-tools.js', 'components/map-view.js', 'components/member-profile.js',
   'components/navigation-view.js', 'components/nearby-layer.js', 'components/offline-map-ui.js', 'components/outage-search.js',
-  'components/perf-viewer.js', 'components/phone-input.js', 'components/profile-gate.js', 'components/recent-stations.js',
+  'components/perf-viewer.js', 'components/phone-input.js', 'components/profile-gate.js', 'components/recent-stations.js', 'components/recent-tool.js',
   'components/shifts-calendar.js', 'components/station-card.js', 'components/station-search-box.js', 'components/stats-cards.js',
   'components/install-sheet.js', 'components/storage-section.js', 'components/update-sheet.js', 'components/admin-guard.js', 'components/feature-tour.js', 'config/جولة_تعريفية.js',
   'pages/home.js',

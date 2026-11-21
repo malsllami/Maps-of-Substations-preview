@@ -91,3 +91,14 @@ body:not(.nav-full) .view-map .map-panels > .outage-missing{border-color:rgba(22
 .cab-dist{color:var(--text-secondary);white-space:nowrap;}
 .cab-go{border:0;border-radius:9px;background:var(--cab);color:#fff;font:inherit;font-size:12.5px;font-weight:700;padding:7px 14px;cursor:pointer;min-height:34px;}
 .cab-go:active{opacity:.75;}
+
+/* (21 نوفمبر، النموذج 1) «آخر المحطات»: قائمة مثل الكبائن، وشريط كل سطر بلون نوع المحطة — like the cabinets list, each row in its kind's color */
+.recent-list-head{color:var(--text-primary);}
+.recent-row-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.recent-id{flex:none;}
+.recent-sub{font-size:11px;font-weight:600;color:var(--text-secondary);}
+.recent-row.k-dist{border-inline-start-color:var(--c-dist-line);} .recent-row.k-dist .recent-id{color:var(--c-dist-fg);}
+.recent-row.k-sub{border-inline-start-color:var(--c-sub-line);} .recent-row.k-sub .recent-id{color:var(--c-sub-fg);}
+.recent-row.k-switch{border-inline-start-color:var(--c-sw-line);} .recent-row.k-switch .recent-id{color:var(--c-sw-fg);}
+.recent-row.k-cabinet{border-inline-start-color:var(--c-cab-line);} .recent-row.k-cabinet .recent-id{color:var(--c-cab-fg);}
+.recent-go{background:var(--teal);}

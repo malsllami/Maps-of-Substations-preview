@@ -25,23 +25,27 @@
 
   const CONFIG = global.SEC2_CONFIG;
   if (!CONFIG) throw new Error('recent-stations.js يحتاج config/الإعدادات.js قبله / needs the config first');
-  const KEY = CONFIG.STORAGE_KEYS.RECENT_STATIONS, TTL_MS = CONFIG.TIMING.RECENT_STATIONS_MS;
+  const KEY = CONFIG.STORAGE_KEYS.RECENT_STATIONS;
   const MSG = { TITLE: 'محطاتك الأخيرة', CLEAR: 'مسح السجل', EMPTY: 'ما فيه محطات زرتها مؤخراً بعد',
     GONE: function (id) { return 'المحطة ' + id + ' لم تعد موجودة'; } };
   const GONE_NOTE_MS = 5000;
 
   function keyOf_(s) { return String(s.id).toUpperCase() + '\u0001' + (s.type || ''); }
 
-  /* القائمة الصالحة (آخر ساعتين) الأحدث أولًا، وتُحذف المنتهية من التخزين — The valid list, newest first; expired ones dropped */
-  function list(now) {
+  /* القائمة الأحدث أولًا. (21 نوفمبر، طلب محمد) السجل يُحفظ للأبد (بطاقة «البيانات»)، و maxAgeMs تصفّي العرض فقط دون حذف
+   * (زر «آخر المحطات» في الخريطة: آخر 72 ساعة). المحطة الواحدة سطر واحد (الرقم + النوع) فلا يتضخم السجل بالتكرار.
+   * Newest first. The log is kept forever (the data card); maxAgeMs filters the view only, never deleting (the map
+   * button: the last 72 hours). One entry per station (id + type), so repeats never grow the log. */
+  function list(now, maxAgeMs) {
     const t = now || Date.now();
     let raw = {};
     try { raw = JSON.parse(global.localStorage.getItem(KEY) || '{}') || {}; } catch (e) { raw = {}; }
-    const valid = {};
-    Object.keys(raw).forEach(function (k) { const e = raw[k]; if (e && e.id != null && t - e.visitedAt < TTL_MS) valid[k] = e; });
-    if (Object.keys(valid).length !== Object.keys(raw).length) save_(valid);
-    return Object.keys(valid).map(function (k) { return valid[k]; }).sort(function (a, b) { return b.visitedAt - a.visitedAt; });
+    return Object.keys(raw).map(function (k) { return raw[k]; })
+      .filter(function (e) { return e && e.id != null && (!maxAgeMs || t - e.visitedAt < maxAgeMs); })
+      .sort(function (a, b) { return b.visitedAt - a.visitedAt; });
   }
+  /* (21 نوفمبر) إشعار عند تغيّر السجل — notified when the log changes */
+  function onChange(fn) { listeners.push(fn); return function () { const i = listeners.indexOf(fn); if (i >= 0) listeners.splice(i, 1); }; }
   function save_(map) { try { global.localStorage.setItem(KEY, JSON.stringify(map)); } catch (e) { /* تخزين ممتلئ أو محجوب — لا شيء / storage full or blocked */ } }
 
   /* تسجيل زيارة محطة (عند فتحها) — Record a station visit (when opened) */
@@ -177,5 +181,5 @@
     };
   }
 
-  global.SecRecentStations = { mount: mount, add: add, list: list, clear: clear, MSG: MSG };
+  global.SecRecentStations = { mount: mount, add: add, list: list, clear: clear, onChange: onChange, fresh: fresh_, MSG: MSG };
 })(typeof window !== 'undefined' ? window : globalThis);

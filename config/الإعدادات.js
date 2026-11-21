@@ -97,7 +97,7 @@
       STATIONS_CONFIRM_MAX_AGE_MS: 2 * 60 * 1000, // الثقة بالبحث المحلي دقيقتين بعد آخر تأكيد للإصدار (اختيار محمد 16 أكتوبر) / trust local search 2 min after the last version check
       NOT_FOUND_VERIFY_WAIT_MS: 10000,         // انتظار التأكد من الخادم لمحطة غير موجودة محليًا / wait for server confirmation of a station missing locally
       STATS_STALE_MS: 3 * 60 * 1000,
-      RECENT_STATIONS_MS: 2 * 60 * 60 * 1000,  // «آخر المحطات»: ساعتان / «recent stations»: two hours
+      RECENT_MAP_MS: 72 * 60 * 60 * 1000,      // (21 نوفمبر) زر «آخر المحطات» في الخريطة: آخر 72 ساعة (بطاقة البيانات للأبد) / the map button: the last 72 hours
       TOKEN_RENEW_AFTER_MS: 24 * 60 * 60 * 1000 // تجديد التذكرة بعد يوم / renew the ticket after a day
     },
 
